@@ -14,12 +14,12 @@ This project requires a setup that meets the following criteria to ensure stable
   #### Checking and Installing CUDA
   - Use the command `nvcc --version` in the terminal to check your current CUDA version. If you do not have CUDA installed, or if it's not version 12.1, please visit NVIDIA's official website to download and install CUDA 12.1.
 
-- **G++**: A G++ compiler is required. 
+- **G++** compiler is required. 
   
   #### Checking and Installing G++
   - To check the current version of G++ installed, open a terminal and type `g++ --version`. If G++ is not installed on your system, you will need to install it via your operating system's package manager.
 
-- **GPU**: If your system includes a GPU, a minimum of 9GB VRAM is required for image generation tasks with SDXL-Turbo, SD1.5. For LoRA Training tasks, a minimum of 16GB VRAM is required.
+- **GPU**: If your system includes a GPU, a minimum of **9GB VRAM** is required for **image generation tasks**. For **LoRA Training tasks**, a minimum of **16GB VRAM** is required.
 
   #### Checking VRAM
   - You can use a tool like `nvidia-smi` on systems with NVIDIA GPUs to check VRAM capacity.
