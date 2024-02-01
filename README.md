@@ -1,7 +1,29 @@
 # AI Parrot Worker
 This repository allows you to set up a AI Parrot Worker to generate, LoRa training with SD-1.5, SDXL-turbo.
 
-## Some important details you should know before you start
+
+
+## Pre-installation Requirements
+This project requires a setup that meets the following criteria to ensure stable and efficient operation.
+
+
+- **Python**: Version 3.10. Ensure that Python is properly installed and configured on your system. Use the command `python --version` to check your current Python version.
+
+- **CUDA**: Version 12.1 or compatible. 
+
+  #### Checking and Installing CUDA
+  - Use the command `nvcc --version` in the terminal to check your current CUDA version. If you do not have CUDA installed, or if it's not version 12.1, please visit NVIDIA's official website to download and install CUDA 12.1.
+
+- **G++**: A G++ compiler is required. 
+  
+  #### Checking and Installing G++
+  - To check the current version of G++ installed, open a terminal and type `g++ --version`. If G++ is not installed on your system, you will need to install it via your operating system's package manager.
+
+- **GPU**: If your system includes a GPU, a minimum of 9GB VRAM is required for image generation tasks with SDXL-Turbo, SD1.5. For LoRA Training tasks, a minimum of 16GB VRAM is required.
+
+  #### Checking VRAM
+  - You can use a tool like `nvidia-smi` on systems with NVIDIA GPUs to check VRAM capacity.
+
 
 ## Installing
 
@@ -26,6 +48,11 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 1. Make a copy of `.env_template` to `.env`
 1. Edit `.env` and follow the instructions within to fill in your details.
+1. This project supports three types of tasks with Parrot Worker
+
+- **parrot_sd_task**
+- **parrot_sdxl_task**
+- **parrot_lora_trainner_task**
 
 ### Starting/Stopping
 
@@ -48,6 +75,16 @@ CUDA_VISBLE_DEVICES=0 python server.py
 
 
 ## Docker
+
+### Pulling and Starting with the Image
+
+To start using the Parrot Worker service, you first need to pull the Docker image from the Docker Hub
+
+```bash
+docker pull parrotnetwork/parrot-worker:base-1.0-sd15-sdxl-lora
+```
+
+### Usage Docker Compose
 
 ### Building
 ```bash
