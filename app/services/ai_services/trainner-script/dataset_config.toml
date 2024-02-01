@@ -1,0 +1,7 @@
+[[datasets]]
+
+    [[datasets.subsets]]
+    image_dir = "../../../../resources/input/images"
+    caption_extension = ".txt"
+    class_tokens = "parrot"
+    num_repeats = 50
