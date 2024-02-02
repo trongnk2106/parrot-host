@@ -1,5 +1,5 @@
-# AI Parrot Worker
-This repository allows you to set up a AI Parrot Worker to generate, LoRa training with SD-1.5, SDXL-turbo.
+# AI Parrot Trainer
+This repository allows you to set up a AI Parrot Trainer to generate, LoRa training with SD-1.5, SDXL-turbo.
 
 
 
@@ -30,15 +30,15 @@ This project requires a setup that meets the following criteria to ensure stable
 ### Using Git
 
 ```bash
-git clone https://github.com/parrotnetwork/parrot-worker.git
-cd parrot-worker
+git clone https://github.com/parrotnetwork/parrot-Trainer.git
+cd parrot-Trainer
 pip install -r requirements.txt
 ```
 Continue with the [Basic Usage](#Basic-Usage) instructions
 
 #### Without git
 
-1. Download [the zipped version](https://github.com/parrotnetwork/parrot-worker/archive/refs/heads/main.zip)
+1. Download [the zipped version](https://github.com/parrotnetwork/parrot-Trainer/archive/refs/heads/main.zip)
 2. Extract it to any folder of your choice
 3. Continue with the [Basic Usage](#Basic-Usage) instructions
 
@@ -48,7 +48,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 1. Make a copy of `.env_template` to `.env`
 1. Edit `.env` and follow the instructions within to fill in your details.
-1. This project supports three types of tasks with Parrot Worker
+1. This project supports three types of tasks with Parrot Trainer
 
 - **parrot_sd_task**
 - **parrot_sdxl_task**
@@ -56,32 +56,32 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 ### Starting/Stopping
 
-#### Starting the worker
+#### Starting the Trainer
 
 In the terminal in which it's running
 
 ```bash
-CUDA_VISBLE_DEVICES=0 sh parrot_worker.sh
+CUDA_VISBLE_DEVICES=0 sh parrot_Trainer.sh
 ```
 Or
 ```bash
 CUDA_VISBLE_DEVICES=0 python server.py
 ```
 
-#### Stopping the worker
+#### Stopping the Trainer
 
 * In the terminal in which it's running, simply press `Ctrl+C` together.
-* The worker will finish the current jobs before exiting.
+* The Trainer will finish the current jobs before exiting.
 
 
 ## Docker
 
 ### Pulling and Starting with the Image
 
-To start using the Parrot Worker service, you first need to pull the Docker image from the Docker Hub
+To start using the Parrot Trainer service, you first need to pull the Docker image from the Docker Hub
 
 ```bash
-docker pull parrotnetwork/parrot-worker:base-1.0-sd15-sdxl-lora
+docker pull parrotnetwork/parrot-Trainer:base-1.0-sd15-sdxl-lora
 ```
 
 ### Usage Docker Compose
