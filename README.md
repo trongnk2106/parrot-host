@@ -30,15 +30,15 @@ This project requires a setup that meets the following criteria to ensure stable
 ### Using Git
 
 ```bash
-git clone https://github.com/parrotnetwork/parrot-Trainer.git
-cd parrot-Trainer
+git clone https://github.com/parrotnetwork/parrot-trainer.git
+cd parrot-trainer
 pip install -r requirements.txt
 ```
 Continue with the [Basic Usage](#Basic-Usage) instructions
 
 #### Without git
 
-1. Download [the zipped version](https://github.com/parrotnetwork/parrot-Trainer/archive/refs/heads/main.zip)
+1. Download [the zipped version](https://github.com/parrotnetwork/parrot-trainer/archive/refs/heads/main.zip)
 2. Extract it to any folder of your choice
 3. Continue with the [Basic Usage](#Basic-Usage) instructions
 
@@ -61,7 +61,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 In the terminal in which it's running
 
 ```bash
-CUDA_VISBLE_DEVICES=0 sh parrot_Trainer.sh
+CUDA_VISBLE_DEVICES=0 sh parrot_worker.sh
 ```
 Or
 ```bash
@@ -71,7 +71,7 @@ CUDA_VISBLE_DEVICES=0 python server.py
 #### Stopping the Trainer
 
 * In the terminal in which it's running, simply press `Ctrl+C` together.
-* The Trainer will finish the current jobs before exiting.
+* The worker will finish the current jobs before exiting.
 
 
 ## Docker
@@ -81,7 +81,7 @@ CUDA_VISBLE_DEVICES=0 python server.py
 To start using the Parrot Trainer service, you first need to pull the Docker image from the Docker Hub
 
 ```bash
-docker pull parrotnetwork/parrot-Trainer:base-1.0-sd15-sdxl-lora
+docker pull parrotnetwork/parrot-worker:base-1.0-sd15-sdxl-lora
 ```
 
 ### Usage Docker Compose
