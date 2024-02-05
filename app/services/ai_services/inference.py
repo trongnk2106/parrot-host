@@ -84,9 +84,6 @@ def run_sd(prompt: str, config: dict):
         
     negative_prompt = config.get("negative_prompt", "")
     
-    prompt += " high detailed, 8k, high res, (masterpiece:1.4), (highest quality:1.4), (sharp focus:1.2), 8k wallpaper, (tight gap:1.2)"
-    negative_prompt += " out of frame, lowres, text, error, cropped, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, out of frame, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck, username, watermark, signature"
-    
     use_lora = False
     lora_weight_url = config.get("lora_weight_url", "")
     if len(lora_weight_url):
@@ -134,9 +131,6 @@ def run_sdxl(prompt: str, config: dict):
     if rotation == "vertical":
         width, height = 512, 768 
     negative_prompt = config.get("negative_prompt", "")
-    
-    prompt += " high detailed, 8k, high res, (masterpiece:1.4), (highest quality:1.4), (sharp focus:1.2), 8k wallpaper, (tight gap:1.2)"
-    negative_prompt += " out of frame, lowres, text, error, cropped, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, out of frame, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck, username, watermark, signature"
     
     use_lora = False
     lora_weight_url = config.get("lora_weight_url", "")
@@ -319,20 +313,3 @@ def download_lora_weight(url, saved_dir, filename):
 def remove(file_path):
     if os.path.exists(file_path):
         os.remove(file_path)
-
-if __name__=="__main__":
-    
-    prompt = "the cat and the dog"
-    negative_prompt = ""
-    
-    lora_weight_url = "https://civitai.com/api/download/models/68115"
-    # lora_weight_url = "https://civitai.com/api/download/models/268054"
-    config = {"rotation": "square", "lora_weight_url": lora_weight_url} # ["horizontal", "vertical", "square"]
-    # image = run_sd(prompt, config)
-    
-    image = run_sd(prompt, config)
-    image.save("test.png")
-    
-    config = {"rotation": "horizontal"} # ["horizontal", "vertical", "square"]
-    image = run_sd(prompt, config)
-    image.save("test_2.png")
