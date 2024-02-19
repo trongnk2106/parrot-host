@@ -52,7 +52,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 - **parrot_sd_task**
 - **parrot_sdxl_task**
-- **parrot_lora_trainner_task**
+- **parrot_lora_trainer_task**
 
 ### Starting/Stopping
 
@@ -61,7 +61,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 In the terminal in which it's running
 
 ```bash
-CUDA_VISBLE_DEVICES=0 sh parrot_worker.sh
+CUDA_VISBLE_DEVICES=0 sh parrot_{sd/sdxl/lora}.sh
 ```
 Or
 ```bash
