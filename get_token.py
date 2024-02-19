@@ -4,7 +4,7 @@ import json
 from base64 import b64encode 
 
 
-base_url = "https://api.joinparrot.ai/v1"
+base_url = "http://103.186.100.33:8499/v1"
 
 def get_token():
     """
@@ -32,5 +32,32 @@ def get_token():
     print(token)
     return token
 
+def add_token_to_env(source_file, target_file, old_text, new_text):
+    """
+    Replaces occurrences of old_text with new_text in a file and saves the result to a new file.
+
+    Args:
+    source_file: Path to the file to read from.
+    target_file: Path to the file to write to.
+    old_text: The text to be replaced.
+    new_text: The replacement text.
+    """
+    try:
+        with open(source_file, "r") as source:
+            data = source.read()
+            updated_data = data.replace(old_text, new_text)
+
+        with open(target_file, "w") as target:
+            target.write(updated_data)
+
+        print(f"ENV file created successfully.")
+
+    except FileNotFoundError:
+        print(f"Error: ENV temaplte file '{source_file}' not found.")
+
+
+
+
 if __name__ == "__main__":
-    get_token()
+    token = get_token()
+    add_token_to_env('.env_template', '.env', '<PUT_YOUR_TOKEN_HERE>', token)
