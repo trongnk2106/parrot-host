@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_lora_trainer_task python3 server.py

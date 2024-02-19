@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_sdxl_task python3 server.py
