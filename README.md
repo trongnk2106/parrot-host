@@ -1,5 +1,5 @@
-# AI Parrot Trainer
-This repository allows you to set up a AI Parrot Trainer to generate, LoRa training with SD-1.5, SDXL-turbo.
+# AI Parrot Host
+This repository allows you to set up a AI Parrot Host to generate, LoRa training with SD-1.5, SDXL-turbo.
 
 
 
@@ -30,15 +30,15 @@ This project requires a setup that meets the following criteria to ensure stable
 ### Using Git
 
 ```bash
-git clone https://github.com/parrotnetwork/parrot-trainer.git
-cd parrot-trainer
+git clone https://github.com/parrotnetwork/parrot-host.git
+cd parrot-host
 pip install -r requirements.txt
 ```
 Continue with the [Basic Usage](#Basic-Usage) instructions
 
 #### Without git
 
-1. Download [the zipped version](https://github.com/parrotnetwork/parrot-trainer/archive/refs/heads/main.zip)
+1. Download [the zipped version](https://github.com/parrotnetwork/parrot-host/archive/refs/heads/main.zip)
 2. Extract it to any folder of your choice
 3. Continue with the [Basic Usage](#Basic-Usage) instructions
 
@@ -48,27 +48,27 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 1. Make a copy of `.env_template` to `.env`
 1. Edit `.env` and follow the instructions within to fill in your details.
-1. This project supports three types of tasks with Parrot Trainer
+1. This project supports three types of tasks with Parrot Host
 
 - **parrot_sd_task**
 - **parrot_sdxl_task**
-- **parrot_lora_trainner_task**
+- **parrot_lora_trainer_task**
 
 ### Starting/Stopping
 
-#### Starting the Trainer
+#### Starting the Host
 
 In the terminal in which it's running
 
 ```bash
-CUDA_VISBLE_DEVICES=0 sh parrot_worker.sh
+CUDA_VISBLE_DEVICES=0 sh parrot_{sd/sdxl/lora}.sh
 ```
 Or
 ```bash
 CUDA_VISBLE_DEVICES=0 python server.py
 ```
 
-#### Stopping the Trainer
+#### Stopping the Host
 
 * In the terminal in which it's running, simply press `Ctrl+C` together.
 * The worker will finish the current jobs before exiting.
@@ -78,7 +78,7 @@ CUDA_VISBLE_DEVICES=0 python server.py
 
 ### Pulling and Starting with the Image
 
-To start using the Parrot Trainer service, you first need to pull the Docker image from the Docker Hub
+To start using the Parrot Host service, you first need to pull the Docker image from the Docker Hub
 
 ```bash
 docker pull parrotnetwork/parrot-worker:base-1.0-sd15-sdxl-lora

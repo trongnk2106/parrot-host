@@ -115,7 +115,7 @@ def parrot_diffuser_task(self, request_data):
 #     bind=True,
 #     max_retries=int(os.environ['CELERY_MAX_RETRIES'])
 # )
-def parrot_lora_trainner_task(self, request_data):
+def parrot_lora_trainer_task(self, request_data):
     result = None
     try:
         result = worker_lora_trainner(
