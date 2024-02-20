@@ -19,7 +19,7 @@ from diffusers.models.attention_processor import AttnProcessor2_0
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
-
+NO_HALF = os.environ.get('NO_HALF', False)
 # Resouce 
 RESOURCE_CACHE = {}
 
@@ -34,18 +34,28 @@ elif (torch.has_mps or torch.backends.mps.is_available()) and ALLOW_MPS:
     DEVICE = "mps"
 
 print(f"[INFO] Using device: {DEVICE}")
+print(f"[INFO] Using half: {not NO_HALF}")
 
 
 if "parrot_sd_task" in ENABLED_TASKS:
     print(f"[INFO] Loading SD1.5 ...")
-    pipeline_sd = DiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16")
+    if NO_HALF:
+        pipeline_sd = DiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
+    else:
+        pipeline_sd = DiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16")
+    
     pipeline_sd.to(DEVICE)
+        
     RESOURCE_CACHE["parrot_sd_task"] = pipeline_sd
 
 
 if "parrot_sdxl_task" in ENABLED_TASKS:
     print(f"[INFO] Loading SDXL-turbo ...")
-    pipeline_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
+    if NO_HALF:
+        pipeline_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo")
+    else:
+        pipeline_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
+        
     pipeline_turbo.to(DEVICE)
     RESOURCE_CACHE["parrot_sdxl_task"] = pipeline_turbo
     
@@ -159,7 +169,6 @@ def run_sdxl(prompt: str, config: dict):
     
     # to unfuse the LoRA weights
     if use_lora:
-        RESOURCE_CACHE["parrot_sd_task"].unet.set_attn_processor(AttnProcessor2_0())
         remove(os.path.join(saved_dir, filename))
         
     return image 
