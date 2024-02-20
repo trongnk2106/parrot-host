@@ -1,3 +1,4 @@
+
 # AI Parrot Host
 This repository allows you to set up a AI Parrot Host to generate, LoRa training with SD-1.5, SDXL-turbo.
 
@@ -46,8 +47,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 ### Configure 
 
-1. Make a copy of `.env_template` to `.env`
-1. Edit `.env` and follow the instructions within to fill in your details.
+1. Login and get your TOKEN by run `python get_token_and_create_env.py -username <your_user_name> -password <your_password>`  
 1. This project supports three types of tasks with Parrot Host
 
 - **parrot_sd_task**
@@ -57,6 +57,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 ### Starting/Stopping
 
 #### Starting the Host
+#####  Linux
 
 In the terminal in which it's running
 
@@ -67,7 +68,10 @@ Or
 ```bash
 CUDA_VISBLE_DEVICES=0 python server.py
 ```
-
+#####  Windows
+1. Open file .env and uncomment the line: **ENABLED_TASKS = "parrot_sdxl_task"**
+2. You can change **parrot_sdxl_task** into other tasks (**parrot_sdxl_task**, **parrot_lora_trainer_task**)
+3. Run `python server.py` to start server.
 #### Stopping the Host
 
 * In the terminal in which it's running, simply press `Ctrl+C` together.
