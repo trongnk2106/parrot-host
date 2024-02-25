@@ -35,6 +35,13 @@ if __name__ == "__main__":
     if "parrot_lora_trainer_task" in enabled_tasks:
         queue_name = "lora_trainner_queue"
     
+    userhost = os.environ.get('USERNAME', 'guest')
     celery_app.worker_main(
-        argv=['-A', 'tasks', 'worker', '--loglevel=info', '-c', f'{worker_number}', '-n', 'worker1.%h', '-Q', f'{queue_name}', '--pool', 'solo'])
+        argv=['-A', 'tasks', 'worker', '--loglevel=info', 
+            '-c', f'{worker_number}', 
+            '-n', f'{queue_name.replace("_queue", "_task")}.{userhost}', 
+            '-Q', f'{queue_name}', 
+            '--pool', 'solo'
+        ]
+    )
 

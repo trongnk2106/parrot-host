@@ -30,7 +30,7 @@ def get_token():
     # obtain the token
     token = response.json()["data"]["access_token"]
     print(token)
-    return token
+    return args.username, token
 
 def add_token_to_env(source_file, target_file, old_text, new_text):
     """
@@ -59,5 +59,6 @@ def add_token_to_env(source_file, target_file, old_text, new_text):
 
 
 if __name__ == "__main__":
-    token = get_token()
+    username, token = get_token()
+    add_token_to_env('.env_template', '.env_template', "<PUT_YOUR_USERNAME_HERE>", username)
     add_token_to_env('.env_template', '.env', '<PUT_YOUR_TOKEN_HERE>', token)
