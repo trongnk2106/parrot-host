@@ -7,6 +7,7 @@ from app.src.v1.schemas.base_message import BaseMessageEncoderRequest, BaseMessa
 from app.src.v1.schemas.lora_trainner import LoraTrainnerRequest, SendProgressTaskRequest, SDXLRequest, SDRequest
 from app.src.v1.sd.sd import sd
 from app.src.v1.sdxl.sdxl import sdxl
+from app.src.v1.sdxl.sdxl import sdxl_lightning
 from app.src.v1.summarize.summarize import summarize
 
 
@@ -118,6 +119,35 @@ def worker_sdxl(
         )
     )
     is_success, response, error = sdxl(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+
+def worker_sdxl_lightning(
+        celery_task_id: str,
+        celery_task_name: str,
+        request_data: SDXLRequest,
+):
+    show_log(
+        message="function: worker_sdxl_lightning, "
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    send_progress_task(
+        SendProgressTaskRequest(
+            task_id=request_data['task_id'],
+            task_type="SDXL",
+            percent=10
+        )
+    )
+    is_success, response, error = sdxl_lightning(
         celery_task_id=celery_task_id,
         request_data=request_data,
     )

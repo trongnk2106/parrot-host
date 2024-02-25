@@ -15,7 +15,14 @@ import model_loader
 from transformers import CLIPTokenizer
 from ddpm import DDPMSampler
 from diffusers import AutoPipelineForText2Image, DiffusionPipeline
+from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler
 from diffusers.models.attention_processor import AttnProcessor2_0
+from huggingface_hub import hf_hub_download
+from safetensors.torch import load_file
+
+base = "stabilityai/stable-diffusion-xl-base-1.0"
+repo = "ByteDance/SDXL-Lightning"
+ckpt = "sdxl_lightning_8step_unet.safetensors"
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -59,6 +66,27 @@ if "parrot_sdxl_task" in ENABLED_TASKS:
     pipeline_turbo.to(DEVICE)
     RESOURCE_CACHE["parrot_sdxl_task"] = pipeline_turbo
     
+if "parrot_sdxl_lightning_task" in ENABLED_TASKS:
+    print(f"[INFO] Loading SDXL-lightning ...")
+    base = "stabilityai/stable-diffusion-xl-base-1.0"
+    repo = "ByteDance/SDXL-Lightning"
+    ckpt = "sdxl_lightning_8step_unet.safetensors"
+
+    if NO_HALF:
+        # Load model.
+        unet = UNet2DConditionModel.from_config(base, subfolder="unet")
+        unet.load_state_dict(load_file(hf_hub_download(repo, ckpt)))
+        pipeline_lightning = StableDiffusionXLPipeline.from_pretrained(base, unet=unet)
+        pipeline_lightning.to(DEVICE)
+    else:
+        unet = UNet2DConditionModel.from_config(base, subfolder="unet").to("cuda", torch.float16)
+        unet.load_state_dict(load_file(hf_hub_download(repo, ckpt), device="cuda"))
+        pipeline_lightning = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float16, variant="fp16").to("cuda")
+                
+    # Ensure sampler uses "trailing" timesteps.
+    pipeline_lightning.scheduler = EulerDiscreteScheduler.from_config(pipeline_lightning.scheduler.config, timestep_spacing="trailing")
+    RESOURCE_CACHE["parrot_sdxl_lightning_task"] = pipeline_lightning
+
     
 if "parrot_encoder_task" in ENABLED_TASKS:
     print(f"[INFO] Loading Encoder module ...")
@@ -166,6 +194,52 @@ def run_sdxl(prompt: str, config: dict):
         height=height,
         guidance_scale=0.0, 
         num_inference_steps=1).images[0]
+    
+    # to unfuse the LoRA weights
+    if use_lora:
+        remove(os.path.join(saved_dir, filename))
+        
+    return image 
+
+
+def run_sdxl_lightning(prompt: str, config: dict):
+    # Load config
+    num_inference_steps = 8
+    
+    rotation = config.get("rotation", "square")
+    width, height = 512, 512
+    if rotation == "square":
+        width, height = 1024, 1024
+    if rotation == "horizontal":
+        width, height = 768, 512 
+    if rotation == "vertical":
+        width, height = 512, 768 
+    negative_prompt = config.get("negative_prompt", "")
+    
+    use_lora = False
+    lora_weight_url = config.get("lora_weight_url", "")
+    if len(lora_weight_url):
+        use_lora = True
+    
+    saved_dir, filename = "", ""
+    if use_lora:
+        try:
+            saved_dir = "saved_lora_checkpoints"
+            filename = f"{int(time.time())}.safetensors"
+            download_lora_weight(lora_weight_url, saved_dir, filename)
+            RESOURCE_CACHE["parrot_sdxl_task"].load_lora_weights(saved_dir, weight_name=filename)
+        except Exception as e:
+            print(e)
+            remove(os.path.join(saved_dir, filename))
+            use_lora = False 
+            
+    image = RESOURCE_CACHE["parrot_sdxl_lightning_task"](
+        prompt=prompt, 
+        negative_prompt=negative_prompt,
+        width=width,
+        height=height,
+        guidance_scale=0.0, 
+        num_inference_steps=num_inference_steps).images[0]
     
     # to unfuse the LoRA weights
     if use_lora:
