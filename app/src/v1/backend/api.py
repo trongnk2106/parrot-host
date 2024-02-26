@@ -173,6 +173,23 @@ def send_done_sdxl_task(request_data: DoneSDXLRequest):
         show_log(message=e, level="error")
         return False, None, e
 
+def send_done_sdxl_lightning_task(request_data: DoneSDXLRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bearer {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_sdxl_lightning_task",
+            json=request_data.dict()
+        )
+        print(response.status_code, response.json())
+        if response.status_code == 200:
+            return True, response.json(), None
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
 
 def send_done_sd_task(request_data: DoneSDRequest):
     try:

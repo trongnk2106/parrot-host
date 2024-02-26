@@ -3,7 +3,7 @@ import shutil
 import time 
 
 from app.base.exception.exception import show_log
-from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sdxl_task
+from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sdxl_task, send_done_sdxl_lightning_task
 from app.src.v1.schemas.lora_trainner import UpdateStatusTaskRequest, \
     SendProgressTaskRequest, SDXLRequest, DoneSDXLRequest
 from app.utils.base import remove_documents
@@ -146,7 +146,7 @@ def sdxl_lightning(
             return response
 
         # send done task
-        send_done_sdxl_task(
+        send_done_sdxl_lightning_task(
             request_data=DoneSDXLRequest(
                 task_id=request_data['task_id'],
                 url_download=result
