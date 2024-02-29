@@ -8,6 +8,7 @@ from app.src.v1.schemas.lora_trainner import LoraTrainnerRequest, SendProgressTa
 from app.src.v1.sd.sd import sd
 from app.src.v1.sdxl.sdxl import sdxl
 from app.src.v1.sdxl.sdxl import sdxl_lightning
+from app.src.v1.txt2vid.txt2vid import txt2vid
 from app.src.v1.summarize.summarize import summarize
 
 
@@ -79,13 +80,6 @@ def worker_lora_trainner(
         file_urls=request_data['minio_input_paths']
     )
 
-    send_progress_task(
-        SendProgressTaskRequest(
-            task_id=request_data['task_id'],
-            task_type="LORA_TRAINNER",
-            percent=10
-        )
-    )
     is_success, response, error = lora_trainner(
         celery_task_id=celery_task_id,
         request_data=request_data,
@@ -93,6 +87,7 @@ def worker_lora_trainner(
         output_paths=output_paths,
         minio_output_paths=minio_output_paths,
     )
+
     return {
         "is_success": is_success,
         "response": response,
@@ -177,6 +172,35 @@ def worker_sd(
         )
     )
     is_success, response, error = sd(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+def worker_txt2vid(
+        celery_task_id: str,
+        celery_task_name: str,
+        request_data: SDRequest,
+):
+    show_log(
+        message="function: worker_txt2vid"
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    send_progress_task(
+        SendProgressTaskRequest(
+            task_id=request_data['task_id'],
+            task_type="TXT2VID",
+            percent=10
+        )
+    )
+    is_success, response, error = txt2vid(
         celery_task_id=celery_task_id,
         request_data=request_data,
     )

@@ -286,3 +286,33 @@ def parrot_sd_task(self, request_data):
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
 
+def parrot_txt2vid_task(self, request_data):
+    result = None
+    try:
+        result = worker_txt2vid(
+            request_data=request_data,
+            celery_task_id=self.request.id,
+            celery_task_name=self.name,
+        )
+        if not result.get('is_success'):
+            raise Exception("result is None")
+        self.update_state(state=SUCCESS, meta={'result': result})
+    except Exception as ex:
+        if self.request.retries >= self.max_retries:
+            show_log(message=ex, level="error")
+            self.update_state(state=FAILURE, meta={'result': result})
+            is_success, _, _ = send_fail_task(
+                SendFailTaskRequest(
+                    task_id=request_data['task_id'],
+                    task_type="TXT2VID",
+                )
+            )
+            if not is_success:
+                raise Exception("send fail task failed")
+        else:
+            show_log(
+                message=f"Retry celery_id: {self.request.id},"
+                        f" celery_task_name: {self.name},"
+                        f" index: {self.request.retries}"
+            )
+            self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))

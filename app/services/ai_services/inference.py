@@ -1,28 +1,29 @@
+import io
 import os 
 import sys
 import time
 from dotenv import load_dotenv
+
 _ = load_dotenv()
 sys.path.append('./app/services/ai_services/')
 sys.path[0] = './app/services/ai_services/'
 
 import torch
+import tempfile
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
 import model_loader
+import random 
+import imageio 
 
 from transformers import CLIPTokenizer
 from ddpm import DDPMSampler
 from diffusers import AutoPipelineForText2Image, DiffusionPipeline
-from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler
-from diffusers.models.attention_processor import AttnProcessor2_0
+from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler, DPMSolverMultistepScheduler
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
-base = "stabilityai/stable-diffusion-xl-base-1.0"
-repo = "ByteDance/SDXL-Lightning"
-ckpt = "sdxl_lightning_8step_unet.safetensors"
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -86,7 +87,6 @@ if "parrot_sdxl_lightning_task" in ENABLED_TASKS:
     # Ensure sampler uses "trailing" timesteps.
     pipeline_lightning.scheduler = EulerDiscreteScheduler.from_config(pipeline_lightning.scheduler.config, timestep_spacing="trailing")
     RESOURCE_CACHE["parrot_sdxl_lightning_task"] = pipeline_lightning
-
     
 if "parrot_encoder_task" in ENABLED_TASKS:
     print(f"[INFO] Loading Encoder module ...")
@@ -96,7 +96,6 @@ if "parrot_encoder_task" in ENABLED_TASKS:
     models["tokenizer"] = tokenizer
     RESOURCE_CACHE["parrot_encoder_task"] = models
 
-
 if "parrot_diffuser_task" in ENABLED_TASKS:
     print(f"[INFO] Loading Diffuser module ...")
     tokenizer = CLIPTokenizer("./app/services/ai_services/data/tokenizer_vocab.json", merges_file="./app/services/ai_services/data/tokenizer_merges.txt")
@@ -105,20 +104,37 @@ if "parrot_diffuser_task" in ENABLED_TASKS:
     models["tokenizer"] = tokenizer
     RESOURCE_CACHE["parrot_diffuser_task"] = models
 
+if "parrot_txt2vid_task" in ENABLED_TASKS:
+    pipe = DiffusionPipeline.from_pretrained('damo-vilab/text-to-video-ms-1.7b', torch_dtype=torch.float16,variant='fp16').to("cuda")
+    pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
+    pipe.enable_model_cpu_offload()
+    pipe.enable_vae_slicing()
+    RESOURCE_CACHE["parrot_txt2vid_task"] = pipe
+
 
 def run_sd(prompt: str, config: dict):
     # Load config
     num_inference_steps = config.get("steps", 50)
     num_inference_steps = min(num_inference_steps, 50)
+    guidance_scale = config.get("cfg_scale", 7.5)
     
-    rotation = config.get("rotation", "square")
-    width, height = 512, 512
-    if rotation == "square":
-        width, height = 768, 768
-    if rotation == "horizontal":
-        width, height = 768, 512 
-    if rotation == "vertical":
-        width, height = 512, 768 
+    if config.get("rotation"):
+        rotation = config.get("rotation", "square")
+        width, height = 512, 512
+        if rotation == "square":
+            width, height = 512, 512
+        if rotation == "horizontal":
+            width, height = 768, 512 
+        if rotation == "vertical":
+            width, height = 512, 768 
+    else:
+        width, height = config.get("width", 512), config.get("height", 512)
+
+    negative_prompt = config.get("negative_prompt", "")
+    seed = config.get("seed", -1)
+    if seed == -1:
+        seed = random.randint(0, 1000000)
+    generator = torch.Generator().manual_seed(seed)
         
     negative_prompt = config.get("negative_prompt", "")
     
@@ -137,20 +153,22 @@ def run_sd(prompt: str, config: dict):
         except Exception as e:
             print(e)
             remove(os.path.join(saved_dir, filename))
+            RESOURCE_CACHE["parrot_sd_task"].unload_lora_weights()            
             use_lora = False 
             
     image = RESOURCE_CACHE["parrot_sd_task"](
         prompt=prompt, 
         negative_prompt=negative_prompt,
-        guidance_scale=7.5, 
+        guidance_scale=guidance_scale, 
         width=width,
         height=height,
-        num_inference_steps=num_inference_steps).images[0]
+        num_inference_steps=num_inference_steps,
+        generator=generator).images[0]
 
     # to unfuse the LoRA weights
     if use_lora:
-        RESOURCE_CACHE["parrot_sd_task"].unet.set_attn_processor(AttnProcessor2_0())
         remove(os.path.join(saved_dir, filename))
+        RESOURCE_CACHE["parrot_sd_task"].unload_lora_weights()        
         
     return image 
 
@@ -160,14 +178,24 @@ def run_sdxl(prompt: str, config: dict):
     num_inference_steps = config.get("steps", 1)
     num_inference_steps = min(num_inference_steps, 50)
     
-    rotation = config.get("rotation", "square")
-    width, height = 512, 512
-    if rotation == "square":
-        width, height = 768, 768
-    if rotation == "horizontal":
-        width, height = 768, 512 
-    if rotation == "vertical":
-        width, height = 512, 768 
+    if config.get("rotation"):
+        rotation = config.get("rotation", "square")
+        width, height = 512, 512
+        if rotation == "square":
+            width, height = 1024, 1024
+        if rotation == "horizontal":
+            width, height = 768, 512 
+        if rotation == "vertical":
+            width, height = 512, 768 
+    else:
+        width, height = config.get("width", 1024), config.get("height", 1024)
+
+    negative_prompt = config.get("negative_prompt", "")
+    seed = config.get("seed", -1)
+    if seed == -1:
+        seed = random.randint(0, 1000000)
+    generator = torch.Generator().manual_seed(seed)
+
     negative_prompt = config.get("negative_prompt", "")
     
     use_lora = False
@@ -185,6 +213,7 @@ def run_sdxl(prompt: str, config: dict):
         except Exception as e:
             print(e)
             remove(os.path.join(saved_dir, filename))
+            RESOURCE_CACHE["parrot_sdxl_task"].unload_lora_weights()
             use_lora = False 
             
     image = RESOURCE_CACHE["parrot_sdxl_task"](
@@ -193,12 +222,14 @@ def run_sdxl(prompt: str, config: dict):
         width=width,
         height=height,
         guidance_scale=0.0, 
-        num_inference_steps=1).images[0]
+        num_inference_steps=1,
+        generator=generator).images[0]
     
     # to unfuse the LoRA weights
     if use_lora:
         remove(os.path.join(saved_dir, filename))
-        
+        RESOURCE_CACHE["parrot_sdxl_task"].unload_lora_weights()
+
     return image 
 
 
@@ -206,16 +237,24 @@ def run_sdxl_lightning(prompt: str, config: dict):
     # Load config
     num_inference_steps = 8
     
-    rotation = config.get("rotation", "square")
-    width, height = 512, 512
-    if rotation == "square":
-        width, height = 1024, 1024
-    if rotation == "horizontal":
-        width, height = 768, 512 
-    if rotation == "vertical":
-        width, height = 512, 768 
+    if config.get("rotation"):
+        rotation = config.get("rotation", "square")
+        width, height = 512, 512
+        if rotation == "square":
+            width, height = 1024, 1024
+        if rotation == "horizontal":
+            width, height = 768, 512 
+        if rotation == "vertical":
+            width, height = 512, 768 
+    else:
+        width, height = config.get("width", 1024), config.get("height", 1024)
+
     negative_prompt = config.get("negative_prompt", "")
-    
+    seed = config.get("seed", -1)
+    if seed == -1:
+        seed = random.randint(0, 1000000)
+    generator = torch.Generator().manual_seed(seed)
+
     use_lora = False
     lora_weight_url = config.get("lora_weight_url", "")
     if len(lora_weight_url):
@@ -231,6 +270,7 @@ def run_sdxl_lightning(prompt: str, config: dict):
         except Exception as e:
             print(e)
             remove(os.path.join(saved_dir, filename))
+            RESOURCE_CACHE["parrot_sdxl_lightning_task"].unload_lora_weights()            
             use_lora = False 
             
     image = RESOURCE_CACHE["parrot_sdxl_lightning_task"](
@@ -239,13 +279,32 @@ def run_sdxl_lightning(prompt: str, config: dict):
         width=width,
         height=height,
         guidance_scale=0.0, 
-        num_inference_steps=num_inference_steps).images[0]
-    
+        num_inference_steps=num_inference_steps,
+        generator=generator).images[0]
+        
     # to unfuse the LoRA weights
     if use_lora:
         remove(os.path.join(saved_dir, filename))
+        RESOURCE_CACHE["parrot_sdxl_lightning_task"].unload_lora_weights()
         
     return image 
+
+
+def run_txt2vid(prompt: str, config: dict):
+
+    fps = config.get("fps", 8)
+    seed = config.get("seed", -1)
+    num_inference_steps = config.get("steps", 25)
+    num_frames = config.get("frames", 16)
+
+    if seed == -1:
+        seed = random.randint(0, 1000000)
+
+    generator = torch.Generator().manual_seed(seed)
+    frames = RESOURCE_CACHE["parrot_txt2vid_task"](prompt,num_inference_steps=num_inference_steps,num_frames=num_frames,generator=generator).frames
+    
+    video = to_video(frames, fps)
+    return video
 
 
 def run_encoder(prompt: str, config: dict):
@@ -362,7 +421,18 @@ def generate(prompt: str, config: dict):
         images = images.permute(0, 2, 3, 1)
         images = images.to("cpu", torch.uint8).numpy()
         return Image.fromarray(images[0])
-    
+
+
+def to_video(frames: list[np.ndarray], fps: int) -> io.BytesIO:
+    byte_io = io.BytesIO()
+    with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as out_file:
+        writer = imageio.get_writer(out_file.name, format='FFMPEG', fps=fps)
+        for frame in frames:
+            writer.append_data(frame)
+        writer.close()
+        with open(out_file.name, 'rb') as f:
+            byte_io.write(f.read())
+    return byte_io
     
 def rescale(x, old_range, new_range, clamp=False):
     old_min, old_max = old_range
