@@ -17,6 +17,7 @@ tqdm==4.66.1
 numpy==1.26.3
 torch==2.1.2
 peft==0.8.1
+imageio[ffmpeg]
 
 accelerate==0.25.0
 transformers==4.36.2
