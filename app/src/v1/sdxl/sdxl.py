@@ -1,14 +1,19 @@
 import io
-import shutil
-import time 
+import time
 
 from app.base.exception.exception import show_log
-from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sdxl_task, send_done_sdxl_lightning_task
-from app.src.v1.schemas.lora_trainner import UpdateStatusTaskRequest, \
-    SendProgressTaskRequest, SDXLRequest, DoneSDXLRequest
-from app.utils.base import remove_documents
+from app.services.ai_services.image_generation import run_sdxl, run_sdxl_lightning
+from app.src.v1.backend.api import (
+    send_done_sdxl_lightning_task,
+    send_done_sdxl_task, 
+    send_progress_task,
+    update_status_for_task
+)
+from app.src.v1.schemas.base import (
+    DoneSDXLRequest, SDXLRequest,
+    SendProgressTaskRequest,
+    UpdateStatusTaskRequest)
 from app.utils.services import minio_client
-from app.services.ai_services.inference import run_sdxl, run_sdxl_lightning
 
 
 def sdxl(
@@ -21,12 +26,11 @@ def sdxl(
     )
     try:
         result = '' 
-        
         t0 = time.time()
         # SD process
         image_result = run_sdxl(request_data['prompt'], request_data['config'])
         t1 = time.time()
-        print("Time generated: ", t1-t0)
+        print("[INFO] Time generated: ", t1-t0)
         
         # Save the PIL image to the BytesIO object as bytes
         image_bytes_io = io.BytesIO()
@@ -38,11 +42,10 @@ def sdxl(
             content=image_bytes_io,
             s3_key=s3_key
         )
-        
         t2 = time.time()
-        print("Time upload MinIO", t2-t1)
+        print("[INFO] Time upload to storage", t2-t1)
         
-        result = f"http://103.186.100.242:9000/parrot-prod/{s3_key}"
+        result = s3_key
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -88,6 +91,7 @@ def sdxl(
         print(e)
         return False, None, str(e)
 
+
 def sdxl_lightning(
         celery_task_id: str,
         request_data: SDXLRequest,
@@ -98,12 +102,11 @@ def sdxl_lightning(
     )
     try:
         result = '' 
-        
         t0 = time.time()
         # SD process
         image_result = run_sdxl_lightning(request_data['prompt'], request_data['config'])
         t1 = time.time()
-        print("Time generated: ", t1-t0)
+        print("[INFO] Time generated: ", t1-t0)
         
         # Save the PIL image to the BytesIO object as bytes
         image_bytes_io = io.BytesIO()
@@ -117,9 +120,9 @@ def sdxl_lightning(
         )
         
         t2 = time.time()
-        print("Time upload MinIO", t2-t1)
-        
-        result = f"http://103.186.100.242:9000/parrot-prod/{s3_key}"
+        print("[INFO] Time upload to storage", t2-t1)
+
+        result = s3_key
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
