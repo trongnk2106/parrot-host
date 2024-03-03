@@ -4,7 +4,7 @@ import os
 
 from app.base.exception.exception import show_log
 from app.src.v1.backend.api import send_done_lora_trainner_task, update_status_for_task, send_progress_task
-from app.src.v1.schemas.lora_trainner import LoraTrainnerRequest, DoneLoraTrainnerRequest, UpdateStatusTaskRequest, \
+from app.src.v1.schemas.base import LoraTrainnerRequest, DoneLoraTrainnerRequest, UpdateStatusTaskRequest, \
     SendProgressTaskRequest
 from app.utils.base import remove_documents
 from app.utils.services import minio_client

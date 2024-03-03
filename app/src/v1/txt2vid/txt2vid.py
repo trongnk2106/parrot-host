@@ -1,12 +1,12 @@
 import time
 
 from app.base.exception.exception import show_log
-from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_txt2vid_task, send_done_sd_task
-from app.src.v1.schemas.lora_trainner import UpdateStatusTaskRequest, \
+from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sd_task
+from app.src.v1.schemas.base import UpdateStatusTaskRequest, \
     SendProgressTaskRequest, SDRequest, DoneSDRequest
 from app.utils.services import minio_client
 
-from app.services.ai_services.inference import run_txt2vid
+from app.services.ai_services.image_generation import run_txt2vid
 
 def txt2vid(
         celery_task_id: str,
@@ -22,7 +22,7 @@ def txt2vid(
         t0 = time.time()
         video_byte_io = run_txt2vid(request_data['prompt'], request_data['config'])
         t1 = time.time()
-        print("Time generated: ", t1-t0)
+        print("[INFO] Time generated: ", t1-t0)
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.mp4"
         minio_client.minio_upload_file(
@@ -31,9 +31,9 @@ def txt2vid(
         )
         
         t2 = time.time()
-        print("Time upload MinIO", t2-t1)
+        print("[INFO] Time upload to storage", t2-t1)
         
-        result = f"http://103.186.100.242:9000/parrot-prod/{s3_key}"
+        result = f"/parrot-prod/{s3_key}"
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -49,7 +49,6 @@ def txt2vid(
                 percent=50
             )
         )
-
         if not response:
             show_log(
                 message="function: txt2vid "
@@ -74,8 +73,6 @@ def txt2vid(
                 percent=90
             )
         )
-        t3 = time.time()
-        print("Time post process:", t3-t2)
         return True, response, None
     except Exception as e:
         print(e)

@@ -1,7 +1,7 @@
 import os 
 
 from tasks import celery_app
-from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_task
+from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_damo_task, parrot_llm_gemma_7b_task
 
 # Register
 enabled_tasks = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -16,7 +16,8 @@ register_task(parrot_sd_task, "parrot_sd_task")
 register_task(parrot_sdxl_task, "parrot_sdxl_task")
 register_task(parrot_sdxl_lightning_task, "parrot_sdxl_lightning_task")
 register_task(parrot_lora_trainer_task, "parrot_lora_trainer_task")
-register_task(parrot_txt2vid_task, "parrot_txt2vid_task")
+register_task(parrot_txt2vid_damo_task, "parrot_txt2vid_damo_task")
+register_task(parrot_llm_gemma_7b_task, "parrot_llm_gemma_7b_task")
 
 
 if __name__ == "__main__":
@@ -34,8 +35,10 @@ if __name__ == "__main__":
         queue_name = "sdxl_lightning_queue"
     if "parrot_lora_trainer_task" in enabled_tasks:
         queue_name = "lora_trainer_queue"
-    if "parrot_txt2vid_task" in enabled_tasks:
-        queue_name = "txt2vid_modelscope_queue"
+    if "parrot_txt2vid_damo_task" in enabled_tasks:
+        queue_name = "txt2vid_damo_queue"
+    if "parrot_llm_gemma_7b_task" in enabled_tasks:
+        queue_name = "llm_gemma_7b_queue"
     
     userhost = os.environ.get('USERNAME', 'guest')
     celery_app.worker_main(

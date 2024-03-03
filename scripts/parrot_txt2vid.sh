@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_txt2vid_damo_task python3 server.py

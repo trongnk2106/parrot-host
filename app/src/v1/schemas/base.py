@@ -60,3 +60,13 @@ class SDRequest(BaseModel):
 class DoneSDRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     url_download: Any = Field(..., description="url_download")
+
+
+class LLMRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    messages: list = Field(..., description="messages")
+    config: dict = Field(..., description="config")
+
+class DoneLLMRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    response: Any = Field(..., description="url_download")
