@@ -38,7 +38,7 @@ def sd(
         t2 = time.time()
         print("[INFO] Time upload to storage", t2-t1)
         
-        result = s3_key
+        result = f"/parrot-prod/{s3_key}"
         # Update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(

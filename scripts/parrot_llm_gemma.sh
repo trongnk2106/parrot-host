@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_llm_gemma_7b_task python3 server.py

@@ -7,6 +7,7 @@ from app.src.v1.sd.sd import sd
 from app.src.v1.sdxl.sdxl import sdxl
 from app.src.v1.sdxl.sdxl import sdxl_lightning
 from app.src.v1.txt2vid.txt2vid import txt2vid
+from app.src.v1.llm.text_completion import text_completion
 
 
 def worker_lora_trainner(
@@ -147,6 +148,29 @@ def worker_txt2vid(
         )
     )
     is_success, response, error = txt2vid(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+
+def worker_text_completion(
+        celery_task_id: str,
+        celery_task_name: str,
+        request_data: SDRequest,
+):
+    show_log(
+        message="function: worker_text_completion"
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    is_success, response, error = text_completion(
         celery_task_id=celery_task_id,
         request_data=request_data,
     )

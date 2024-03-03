@@ -45,7 +45,7 @@ def sdxl(
         t2 = time.time()
         print("[INFO] Time upload to storage", t2-t1)
         
-        result = s3_key
+        result = f"/parrot-prod/{s3_key}"
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -122,7 +122,7 @@ def sdxl_lightning(
         t2 = time.time()
         print("[INFO] Time upload to storage", t2-t1)
 
-        result = s3_key
+        result = f"/parrot-prod/{s3_key}"
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(

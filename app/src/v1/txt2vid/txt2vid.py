@@ -1,7 +1,7 @@
 import time
 
 from app.base.exception.exception import show_log
-from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_txt2vid_task
+from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sd_task
 from app.src.v1.schemas.base import UpdateStatusTaskRequest, \
     SendProgressTaskRequest, SDRequest, DoneSDRequest
 from app.utils.services import minio_client
@@ -33,7 +33,7 @@ def txt2vid(
         t2 = time.time()
         print("[INFO] Time upload to storage", t2-t1)
         
-        result = s3_key
+        result = f"/parrot-prod/{s3_key}"
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -49,7 +49,6 @@ def txt2vid(
                 percent=50
             )
         )
-
         if not response:
             show_log(
                 message="function: txt2vid "
@@ -60,7 +59,7 @@ def txt2vid(
             return response
 
         # send done task
-        send_done_txt2vid_task(
+        send_done_sd_task(
             request_data=DoneSDRequest(
                 task_id=request_data['task_id'],
                 url_download=result

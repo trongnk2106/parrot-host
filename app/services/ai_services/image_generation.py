@@ -84,7 +84,7 @@ if "parrot_sdxl_lightning_task" in ENABLED_TASKS:
     RESOURCE_CACHE["parrot_sdxl_lightning_task"] = pipeline_lightning
     
 
-if "parrot_txt2vid_task" in ENABLED_TASKS:
+if "parrot_txt2vid_damo_task" in ENABLED_TASKS:
     pipe = DiffusionPipeline.from_pretrained('damo-vilab/text-to-video-ms-1.7b', torch_dtype=torch.float16,variant='fp16').to("cuda")
     pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
     pipe.enable_model_cpu_offload()
@@ -276,12 +276,21 @@ def run_txt2vid(prompt: str, config: dict):
     seed = config.get("seed", -1)
     num_inference_steps = config.get("steps", 25)
     num_frames = config.get("frames", 16)
+    height = config.get("height", 512)
+    width = config.get("width", 512)
 
     if seed == -1:
         seed = random.randint(0, 1000000)
 
     generator = torch.Generator().manual_seed(seed)
-    frames = RESOURCE_CACHE["parrot_txt2vid_task"](prompt,num_inference_steps=num_inference_steps,num_frames=num_frames,generator=generator).frames
+    frames = RESOURCE_CACHE["parrot_txt2vid_task"](
+        prompt, 
+        width=width,
+        height=height,
+        num_inference_steps=num_inference_steps,
+        num_frames=num_frames,
+        generator=generator
+    ).frames
     
     video = to_video(frames, fps)
     return video
