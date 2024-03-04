@@ -1,8 +1,6 @@
 
 # AI Parrot Host
-This repository allows you to set up a AI Parrot Host to generate, LoRa training with SD-1.5, SDXL-turbo.
-
-
+This repository facilitates the establishment of an AI Parrot Host, enabling tasks ranging from image, video, and audio generation to the utilization of Large Language Models (LLMs) and LoRa training. It offers the capability to set up and manage Generate AI models for a diverse array of applications.
 
 ## Pre-installation Requirements
 This project requires a setup that meets the following criteria to ensure stable and efficient operation.
@@ -20,7 +18,7 @@ This project requires a setup that meets the following criteria to ensure stable
   #### Checking and Installing G++
   - To check the current version of G++ installed, open a terminal and type `g++ --version`. If G++ is not installed on your system, you will need to install it via your operating system's package manager.
 
-- **GPU**: If your system includes a GPU, a minimum of **9GB VRAM** is required for **image generation tasks**. For **LoRA Training tasks**, a minimum of **16GB VRAM** is required.
+- **GPU**: If your system includes a GPU, a minimum of **12GB VRAM** is required for **image generation tasks**. For **LoRA Training tasks**, **LLMs** and **video generation tasks**, a minimum of **16GB VRAM** is required.
 
   #### Checking VRAM
   - You can use a tool like `nvidia-smi` on systems with NVIDIA GPUs to check VRAM capacity.
@@ -47,12 +45,26 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 ### Configure 
 
-1. Login and get your TOKEN by run `python get_token_and_create_env.py -username <your_user_name> -password <your_password>`  
+1. Login and get your TOKEN 
+```bash
+python get_token_and_create_env.py -username <your_user_name> -password <your_password>  
+```
+
 1. This project supports three types of tasks with Parrot Host
 
-- **parrot_sd_task**
-- **parrot_sdxl_task**
-- **parrot_lora_trainer_task**
+- **Image Generation**
+   - `parrot_sd_task`
+   - `parrot_sdxl_task`
+   - `parrot_sdxl_lightning_task`
+
+- **Video Generation**
+   - `parrot_txt2vid_damo_task`
+
+- **Text Generation**
+   - `parrot_llm_gemma_7b_task`
+
+- **LoRA Train**
+   - `parrot_lora_trainer_task`
 
 ### Starting/Stopping
 
@@ -62,15 +74,15 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 In the terminal in which it's running
 
 ```bash
-CUDA_VISBLE_DEVICES=0 sh parrot_{sd/sdxl/lora}.sh
+CUDA_VISBLE_DEVICES=0 sh scripts/parrot_{task_type}.sh
 ```
 Or
 ```bash
 CUDA_VISBLE_DEVICES=0 python server.py
 ```
 #####  Windows
-1. Open file .env and uncomment the line: **ENABLED_TASKS = "parrot_sdxl_task"**
-2. You can change **parrot_sdxl_task** into other tasks (**parrot_sdxl_task**, **parrot_lora_trainer_task**)
+1. Open file .env and uncomment the line: **ENABLED_TASKS = "parrot_sdxl_lightning_task"**
+2. You can change **parrot_sdxl_lightning_task** into other tasks.
 3. Run `python server.py` to start server.
 #### Stopping the Host
 
