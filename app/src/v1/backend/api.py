@@ -5,7 +5,7 @@ import requests
 from app.base.exception.exception import show_log
 from app.src.v1.schemas.base import (
     DoneLoraTrainnerRequest,
-    DoneSDRequest, DoneSDXLRequest, DoneLLMRequest,
+    DoneSDRequest, DoneSDXLRequest, DoneLLMRequest, DoneT2SRequest, 
     SendDoneTaskRequest,
     SendFailTaskRequest,
     SendProgressTaskRequest,
@@ -190,6 +190,25 @@ def send_done_llm_task(request_data: DoneLLMRequest):
         )
         if response.status_code == 200:
             return True, response.json(), None
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
+
+
+def send_done_t2s_task(request_data: DoneT2SRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bear {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_t2s_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+
         return False, None, response.json()
     except Exception as e:
         show_log(message=e, level="error")
