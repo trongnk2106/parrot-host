@@ -37,3 +37,20 @@ xformers
 open-clip-torch==2.20.0
 
 
+
+av
+flashy
+hydra-core
+hydra_colorlog
+julius
+num2words
+sentencepiece
+spacy
+torchaudio
+huggingface_hub
+demucs
+librosa
+gradio
+torchmetrics
+encodec
+protobuf

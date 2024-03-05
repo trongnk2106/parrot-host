@@ -2,13 +2,15 @@ from app.base.exception.exception import show_log
 from app.src.v1.backend.api import send_progress_task
 from app.src.v1.lora_trainner.lora_trainner import lora_trainner
 from app.src.v1.lora_trainner.repo_init_resource_files import init_resource_files_from_urls
-from app.src.v1.schemas.base import LoraTrainnerRequest, SendProgressTaskRequest, SDXLRequest, SDRequest, T2SRequest
+from app.src.v1.schemas.base import LoraTrainnerRequest, SendProgressTaskRequest, SDXLRequest, SDRequest, T2SRequest, MusicGenRequest, AudioGenRequest
 from app.src.v1.sd.sd import sd
 from app.src.v1.sdxl.sdxl import sdxl
 from app.src.v1.sdxl.sdxl import sdxl_lightning
 from app.src.v1.txt2vid.txt2vid import txt2vid
 from app.src.v1.llm.text_completion import text_completion
 from app.src.v1.bark.bark_txt2speech import text2speech
+from app.src.v1.music_gen.music import music
+from app.src.v1.audio_gen.audio import audio
 
 
 def worker_lora_trainner(
@@ -202,6 +204,65 @@ def worker_t2s(
         )
     )
     is_success, response, error = text2speech(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+
+def worker_musicgen(
+        celery_task_id: str,
+        celery_task_name: str,
+        request_data: MusicGenRequest,
+):
+    show_log(
+        message="function: worker_musicgen"
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    send_progress_task(
+        SendProgressTaskRequest(
+            task_id=request_data['task_id'],
+            task_type="musicgen",
+            percent=10
+        )
+    )
+    is_success, response, error = music(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+def worker_audiogen(
+        celery_task_id: str,
+        celery_task_name: str,
+        request_data: AudioGenRequest,
+):
+    show_log(
+        message="function: worker_audio_gen"
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    send_progress_task(
+        SendProgressTaskRequest(
+            task_id=request_data['task_id'],
+            task_type="audio_gen",
+            percent=10
+        )
+    )
+    is_success, response, error = music(
         celery_task_id=celery_task_id,
         request_data=request_data,
     )

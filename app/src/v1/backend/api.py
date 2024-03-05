@@ -213,3 +213,39 @@ def send_done_t2s_task(request_data: DoneT2SRequest):
     except Exception as e:
         show_log(message=e, level="error")
         return False, None, e
+
+def send_done_musicgen_task(request_data: DoneSDRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bear {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_musicgen_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
+
+def send_done_audiogen_task(request_data: DoneSDRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bear {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_audio_gen_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+        
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e

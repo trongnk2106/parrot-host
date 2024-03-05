@@ -20,6 +20,7 @@ import torch
 # from safetensors.torch import load_file
 # from transformers import AutoProcessor, BarkModel
 from transformers import pipeline
+from audiocraft.models import AudioGen
 
 
 
@@ -51,6 +52,21 @@ if "parrot_text2speech_task" in ENABLED_TASKS:
     pipe = pipeline("text-to-speech", repo, device=DEVICE, half=not NO_HALF)
     RESOURCE_CACHE["parrot_text2speech_task"] = pipe
 
+if "parrot_musicgen_task" in ENABLED_TASKS:
+    print(f"[INFO] Load parrot_musicgen_task")
+    repo = "facebook/musicgen-small"
+    
+    synthesiser = pipeline("text-to-audio", repo, device=0)
+    RESOURCE_CACHE["parrot_musicgen_task"] = synthesiser
+
+if "parrot_audiogen_task" in ENABLED_TASKS:
+    print(f"[INFO] Load parrot_audiogen_task")
+    repo = "facebook/audiogen-medium"
+
+    model = AudioGen.get_pretrained(repo)
+    RESOURCE_CACHE["parrot_audiogen_task"] = model
+
+
 
 def run_text2speech(prompt: str, config: dict):
     print(f"[INFO] Run text2speech")
@@ -69,4 +85,45 @@ def run_text2speech(prompt: str, config: dict):
         print(f"[ERROR] {e}")
         raise Exception("Error when inference")
     
+    return audio_result
+
+
+def run_musicgen(prompt: str, config: dict):
+    print(f"[INFO] Run musicgen")
+    if "parrot_musicgen_task" not in RESOURCE_CACHE:
+        raise Exception("parrot_musicgen_task is not loaded")
+
+    try: 
+        synthesiser = RESOURCE_CACHE["parrot_musicgen_task"]
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        raise Exception("Model parrot_musicgen_task is not loaded")
+
+    try: 
+        music_result = synthesiser(prompt, **config)
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        raise Exception("Error when inference")
+    
+    return music_result
+
+
+def run_audiogen(prompt: str, config: dict):
+    print(f"[INFO] Run audiogen")
+    if "parrot_audiogen_task" not in RESOURCE_CACHE:
+        raise Exception("parrot_audiogen_task is not loaded")
+
+    try:
+        model = RESOURCE_CACHE["parrot_audiogen_task"]
+        model.set_generation_params(duration=config["duration"])
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        raise Exception("Model parrot_audiogen_task is not loaded")
+
+    try:
+        audio_result = model.generate(prompt, **config)
+    except Exception as e:
+        print(f"[ERROR] {e}")
+        raise Exception("Error when inference")
+
     return audio_result
