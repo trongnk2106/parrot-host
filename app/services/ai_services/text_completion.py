@@ -32,13 +32,21 @@ if "parrot_llm_gemma_7b_task" in ENABLED_TASKS:
 
 
 def run_text_completion_gemma_7b(messages: list, configs: dict):
-    prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"].tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    if messages[0]['role'] == 'system':
+        system_prompt = messages[0]['content']
+        messages = messages[1:]
+        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"].tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        prompt = f"{system_prompt}\n{prompt}"
+    else:
+        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"].tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
 
     outputs = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"](
         prompt,
-        max_new_tokens=configs.get("max_new_tokens", 256),
+        max_new_tokens=min(configs.get("max_new_tokens", 256), 4096),
         do_sample=True,
         temperature=max(configs.get("temperature", 0.7), 0.01),
         top_k=configs.get("top_k", 50),
