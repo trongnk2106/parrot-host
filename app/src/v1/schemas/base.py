@@ -70,3 +70,33 @@ class LLMRequest(BaseModel):
 class DoneLLMRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     response: Any = Field(..., description="url_download")
+
+
+
+class T2SRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    prompt: str = Field(..., description="prompt")
+    config: dict = Field(..., description="config")
+
+
+class DoneT2SRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    url_download: Any = Field(..., description="url_download")
+
+class MusicGenRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    prompt: str = Field(..., description="prompt")
+    config: dict = Field(..., description="config")
+
+class DoneMusicGenRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    url_download: Any = Field(..., description="url_download")
+
+class AudioGenRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    prompt: str = Field(..., description="prompt")
+    config: dict = Field(..., description="config")
+
+class DoneAudioGenRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    url_download: Any = Field(..., description="url_download")

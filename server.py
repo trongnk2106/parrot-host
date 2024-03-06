@@ -1,7 +1,7 @@
 import os 
 
 from tasks import celery_app
-from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_damo_task, parrot_llm_gemma_7b_task
+from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_damo_task, parrot_llm_gemma_7b_task, parrot_t2s_task, parrot_musicgen_task, parrot_audiogen_task
 
 # Register
 enabled_tasks = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -18,6 +18,9 @@ register_task(parrot_sdxl_lightning_task, "parrot_sdxl_lightning_task")
 register_task(parrot_lora_trainer_task, "parrot_lora_trainer_task")
 register_task(parrot_txt2vid_damo_task, "parrot_txt2vid_damo_task")
 register_task(parrot_llm_gemma_7b_task, "parrot_llm_gemma_7b_task")
+register_task(parrot_t2s_task, "parrot_t2s_task")
+register_task(parrot_musicgen_task, "parrot_musicgen_task")
+register_task(parrot_audiogen_task, "parrot_audiogen_task")
 
 
 if __name__ == "__main__":
@@ -27,6 +30,8 @@ if __name__ == "__main__":
     
     
     queue_name = "sd_queue"
+
+    print(f"enabled_tasks: {enabled_tasks}")
     if "parrot_sd_task" in enabled_tasks:
         queue_name = "sd_queue"
     if "parrot_sdxl_task" in enabled_tasks:
@@ -39,7 +44,15 @@ if __name__ == "__main__":
         queue_name = "txt2vid_damo_queue"
     if "parrot_llm_gemma_7b_task" in enabled_tasks:
         queue_name = "llm_gemma_7b_queue"
+    if "parrot_t2s_task" in enabled_tasks:
+        queue_name = "t2s_queue"
+    if "parrot_musicgen_task" in enabled_tasks:
+        queue_name = "musicgen_queue"
+    if "parrot_audiogen_task" in enabled_tasks:
+        queue_name = "audiogen_queue"
     
+
+    print(f"queue_name: {queue_name}")
     userhost = os.environ.get('USERNAME', 'guest')
     celery_app.worker_main(
         argv=['-A', 'tasks', 'worker', '--loglevel=info', 
