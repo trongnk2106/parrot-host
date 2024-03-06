@@ -1,7 +1,5 @@
-import io
 import os
 import sys
-import time
 
 from dotenv import load_dotenv
 _ = load_dotenv()
@@ -9,16 +7,7 @@ sys.path.append('./app/services/ai_services/')
 sys.path[0] = './app/services/ai_services/'
 
 
-import random
-import tempfile
-
-import imageio
-import numpy as np
 import torch
-# from diffusers import (AutoPipelineForText2Image, DiffusionPipeline, DPMSolverMultistepScheduler, EulerDiscreteScheduler, StableDiffusionXLPipeline, UNet2DConditionModel)
-# from huggingface_hub import hf_hub_download
-# from safetensors.torch import load_file
-# from transformers import AutoProcessor, BarkModel
 from transformers import pipeline
 from audiocraft.models import AudioGen
 
@@ -43,14 +32,15 @@ elif (torch.has_mps or torch.backends.mps.is_available()) and ALLOW_MPS:
 
 print(f"[INFO] Using device: {DEVICE}")
 print(f"[INFO] Using half: {not NO_HALF}")
+print(f"[INFO] Enabled tasks: {ENABLED_TASKS}")
 
-
-if "parrot_text2speech_task" in ENABLED_TASKS: 
-    print(f"[INFO] Load parrot_text2speech_task")
+if "parrot_t2s_task" in ENABLED_TASKS: 
+    print(f"[INFO] Load parrot_t2s_task")
     repo = "suno/bark"
 
-    pipe = pipeline("text-to-speech", repo, device=DEVICE, half=not NO_HALF)
-    RESOURCE_CACHE["parrot_text2speech_task"] = pipe
+    pipe = pipeline("text-to-speech", repo, device=DEVICE)
+    RESOURCE_CACHE["parrot_t2s_task"] = pipe
+    print(f"[INFO] Load parrot_t2s_task done")
 
 if "parrot_musicgen_task" in ENABLED_TASKS:
     print(f"[INFO] Load parrot_musicgen_task")
@@ -58,6 +48,7 @@ if "parrot_musicgen_task" in ENABLED_TASKS:
     
     synthesiser = pipeline("text-to-audio", repo, device=0)
     RESOURCE_CACHE["parrot_musicgen_task"] = synthesiser
+    print(f"[INFO] Load parrot_musicgen_task done")
 
 if "parrot_audiogen_task" in ENABLED_TASKS:
     print(f"[INFO] Load parrot_audiogen_task")
@@ -65,19 +56,20 @@ if "parrot_audiogen_task" in ENABLED_TASKS:
 
     model = AudioGen.get_pretrained(repo)
     RESOURCE_CACHE["parrot_audiogen_task"] = model
+    print(f"[INFO] Load parrot_audiogen_task done")
 
 
 
 def run_text2speech(prompt: str, config: dict):
     print(f"[INFO] Run text2speech")
-    if "parrot_text2speech_task" not in RESOURCE_CACHE:
-        raise Exception("parrot_text2speech_task is not loaded")
+    if "parrot_t2s_task" not in RESOURCE_CACHE:
+        raise Exception("parrot_t2s_task is not loaded")
 
     try: 
-        pipe = RESOURCE_CACHE["parrot_text2speech_task"]
+        pipe = RESOURCE_CACHE["parrot_t2s_task"]
     except Exception as e:
         print(f"[ERROR] {e}")
-        raise Exception("Model parrot_text2speech_task is not loaded")
+        raise Exception("Model parrot_t2s_task is not loaded")
 
     try: 
         audio_result = pipe(prompt, **config)
@@ -115,7 +107,7 @@ def run_audiogen(prompt: str, config: dict):
 
     try:
         model = RESOURCE_CACHE["parrot_audiogen_task"]
-        model.set_generation_params(duration=config["duration"])
+        # model.set_generation_params(duration=config["duration"])
     except Exception as e:
         print(f"[ERROR] {e}")
         raise Exception("Model parrot_audiogen_task is not loaded")
@@ -127,3 +119,14 @@ def run_audiogen(prompt: str, config: dict):
         raise Exception("Error when inference")
 
     return audio_result
+
+if __name__=="__main__":
+    # print(f"[INFO] Start audio generation service")
+    # print(f"[INFO] enabled_tasks: {ENABLED_TASKS}")
+    # print(f"[INFO] RESOURCE_CACHE: {RESOURCE_CACHE}")
+    # audio_result = run_text2speech("Hello world", {})
+    # print(audio_result)
+    # music_result = run_musicgen("Hello world", {})
+    # print(music_result)
+    audio_result = run_audiogen("Hello world", {})
+    print(audio_result)
