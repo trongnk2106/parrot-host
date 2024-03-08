@@ -12,12 +12,14 @@ sys.path[0] = './app/services/ai_services/'
 import random
 import tempfile
 
+from PIL import Image
 import imageio
 import numpy as np
 import torch
-from diffusers import (AutoPipelineForText2Image, DiffusionPipeline, DPMSolverMultistepScheduler, EulerDiscreteScheduler, StableDiffusionXLPipeline, UNet2DConditionModel)
+from diffusers import (AutoPipelineForText2Image, StableDiffusionXLImg2ImgPipeline, AutoPipelineForImage2Image, DiffusionPipeline, DPMSolverMultistepScheduler, EulerDiscreteScheduler, StableDiffusionXLPipeline, UNet2DConditionModel, StableDiffusionImg2ImgPipeline)
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
+from diffusers.utils import load_image
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -42,9 +44,9 @@ print(f"[INFO] Using half: {not NO_HALF}")
 if "parrot_sd_task" in ENABLED_TASKS:
     print(f"[INFO] Loading SD1.5 ...")
     if NO_HALF:
-        pipeline_sd = DiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
+        pipeline_sd = StableDiffusionImg2ImgPipeline.from_pretrained("runwayml/stable-diffusion-v1-5")
     else:
-        pipeline_sd = DiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16")
+        pipeline_sd = StableDiffusionImg2ImgPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16, variant="fp16")
     
     pipeline_sd.to(DEVICE)
         
@@ -54,9 +56,9 @@ if "parrot_sd_task" in ENABLED_TASKS:
 if "parrot_sdxl_task" in ENABLED_TASKS:
     print(f"[INFO] Loading SDXL-turbo ...")
     if NO_HALF:
-        pipeline_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo")
+        pipeline_turbo = AutoPipelineForImage2Image.from_pretrained("stabilityai/sdxl-turbo")
     else:
-        pipeline_turbo = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
+        pipeline_turbo = AutoPipelineForImage2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16")
         
     pipeline_turbo.to(DEVICE)
     RESOURCE_CACHE["parrot_sdxl_task"] = pipeline_turbo
@@ -72,12 +74,12 @@ if "parrot_sdxl_lightning_task" in ENABLED_TASKS:
         # Load model.
         unet = UNet2DConditionModel.from_config(base, subfolder="unet")
         unet.load_state_dict(load_file(hf_hub_download(repo, ckpt)))
-        pipeline_lightning = StableDiffusionXLPipeline.from_pretrained(base, unet=unet)
+        pipeline_lightning = StableDiffusionXLImg2ImgPipeline.from_pretrained(base)
         pipeline_lightning.to(DEVICE)
     else:
         unet = UNet2DConditionModel.from_config(base, subfolder="unet").to("cuda", torch.float16)
         unet.load_state_dict(load_file(hf_hub_download(repo, ckpt), device="cuda"))
-        pipeline_lightning = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float16, variant="fp16").to("cuda")
+        pipeline_lightning = StableDiffusionXLImg2ImgPipeline.from_pretrained(base, torch_dtype=torch.float16, variant="fp16").to("cuda")
                 
     # Ensure sampler uses "trailing" timesteps.
     pipeline_lightning.scheduler = EulerDiscreteScheduler.from_config(pipeline_lightning.scheduler.config, timestep_spacing="trailing")
@@ -97,6 +99,9 @@ def run_sd(prompt: str, config: dict):
     num_inference_steps = config.get("steps", 50)
     num_inference_steps = min(num_inference_steps, 50)
     guidance_scale = config.get("cfg_scale", 7.5)
+    init_image = config.get("init_image", None)
+    strength = config.get("strength", 0.75)
+
     
     if config.get("rotation"):
         rotation = config.get("rotation", "square")
@@ -136,6 +141,12 @@ def run_sd(prompt: str, config: dict):
             RESOURCE_CACHE["parrot_sd_task"].unload_lora_weights()            
             use_lora = False 
             
+    if init_image is None:
+        # random init image with seed
+        np.random.seed(seed)
+        init_image = np.random.randint(0, 255, (512, 512, 3), dtype=np.uint8)
+        strength = 1.0
+        
     image = RESOURCE_CACHE["parrot_sd_task"](
         prompt=prompt, 
         negative_prompt=negative_prompt,
@@ -143,6 +154,8 @@ def run_sd(prompt: str, config: dict):
         width=width,
         height=height,
         num_inference_steps=num_inference_steps,
+        image=init_image,
+        strength=strength,
         generator=generator).images[0]
 
     # to unfuse the LoRA weights
@@ -157,6 +170,8 @@ def run_sdxl(prompt: str, config: dict):
     # Load config
     num_inference_steps = config.get("steps", 1)
     num_inference_steps = min(num_inference_steps, 50)
+    guidance_scale = config.get("cfg_scale", 7.5)
+    strength = config.get("strength", 0.75)
     
     if config.get("rotation"):
         rotation = config.get("rotation", "square")
@@ -177,6 +192,14 @@ def run_sdxl(prompt: str, config: dict):
     generator = torch.Generator().manual_seed(seed)
 
     negative_prompt = config.get("negative_prompt", "")
+
+    init_image = config.get("init_image", None)
+    if init_image is None:
+        # random init image with seed
+        np.random.seed(seed)
+        init_image = np.random.randint(0, 255, (width, height, 3), dtype=np.uint8)
+        strength = 1.0
+
     
     use_lora = False
     lora_weight_url = config.get("lora_weight_url", "")
@@ -196,13 +219,16 @@ def run_sdxl(prompt: str, config: dict):
             RESOURCE_CACHE["parrot_sdxl_task"].unload_lora_weights()
             use_lora = False 
             
+    
     image = RESOURCE_CACHE["parrot_sdxl_task"](
         prompt=prompt, 
         negative_prompt=negative_prompt,
         width=width,
         height=height,
-        guidance_scale=0.0, 
-        num_inference_steps=1,
+        guidance_scale=guidance_scale, 
+        num_inference_steps=num_inference_steps,
+        image=init_image,
+        strength=strength,
         generator=generator).images[0]
     
     # to unfuse the LoRA weights
@@ -215,7 +241,7 @@ def run_sdxl(prompt: str, config: dict):
 
 def run_sdxl_lightning(prompt: str, config: dict):
     # Load config
-    num_inference_steps = 8
+    # num_inference_steps = 8
     
     if config.get("rotation"):
         rotation = config.get("rotation", "square")
@@ -253,13 +279,28 @@ def run_sdxl_lightning(prompt: str, config: dict):
             RESOURCE_CACHE["parrot_sdxl_lightning_task"].unload_lora_weights()            
             use_lora = False 
             
+
+    init_image = config.get("init_image", None)
+    strength = config.get("strength", 0.75)
+    guidance_scale = config.get("guidance_scale", 7.5)
+    num_inference_steps = config.get("steps", 8)
+
+    if init_image is None:
+        # random init image with seed
+        np.random.seed(seed)
+        init_image = np.random.randint(0, 255, (width, height, 3), dtype=np.uint8)
+        strength = 1.0
+
+
     image = RESOURCE_CACHE["parrot_sdxl_lightning_task"](
         prompt=prompt, 
         negative_prompt=negative_prompt,
         width=width,
         height=height,
-        guidance_scale=0.0, 
+        guidance_scale=guidance_scale, 
         num_inference_steps=num_inference_steps,
+        image=init_image,
+        strength=strength,
         generator=generator).images[0]
         
     # to unfuse the LoRA weights
@@ -320,3 +361,87 @@ def download_lora_weight(url, saved_dir, filename):
 def remove(file_path):
     if os.path.exists(file_path):
         os.remove(file_path)
+
+
+if __name__=="__main__": 
+    # test code for sd ===========================================================
+    # prompt = "the anime girl"
+    # init_image = Image.open("init_image.png").convert("RGB")
+
+    # config = {
+    #     "steps": 50,
+    #     "cfg_scale": 7.5,
+    #     "rotation": "square",
+    #     "width": 512,
+    #     "height": 512,
+    #     "negative_prompt": "",
+    #     "seed": -1,
+    #     "lora_weight_url": "", 
+    #     "init_image": init_image
+    # }
+
+    # config1 = {
+    #     "steps": 50,
+    #     "cfg_scale": 7.5,
+    #     "rotation": "square",
+    #     "width": 512,
+    #     "height": 512,
+    #     "negative_prompt": "",
+    #     "seed": -1,
+    #     "lora_weight_url": "", 
+    # }
+    # # for sd
+    # image = run_sd(prompt, config)
+    # image.save("sd.png")
+    # ==============================================================================
+
+    # test code for sdxl ===========================================================
+    # prompt = "the anime girl"
+
+    # config = {
+    #     "steps": 50,
+    #     "rotation": "square",
+    #     "width": 1024,
+    #     "height": 1024,
+    #     "negative_prompt": "",
+    #     "seed": -1,
+    #     "lora_weight_url": "", 
+    # }
+
+    # init = load_image("init_image.png").resize((512, 512))
+    # config1 = {
+    #     "steps": 50,
+    #     "rotation": "square",
+    #     "width": 1024,
+    #     "height": 1024,
+    #     "negative_prompt": "",
+    #     "seed": -1,
+    #     "lora_weight_url": "", 
+    #     "init": init, 
+    #     "strength": 0.75
+    # }
+
+    # # for sdxl
+    # image = run_sdxl(prompt, config1)
+    # image.save("sdxl.png")
+    # ==============================================================================
+
+    # test code for sdxl_lightning =================================================
+    prompt = "the anime girl"
+    init_image = Image.open("init_image.png").convert("RGB")
+
+    config = {
+        "steps": 8,
+        "rotation": "square",
+        "width": 1024,
+        "height": 1024,
+        "negative_prompt": "",
+        "seed": -1,
+        "lora_weight_url": "", 
+        "init_image": init_image, 
+        "strength": 0.75
+    }
+
+    image = run_sdxl_lightning(prompt, config)
+    image.save("sdxl_lightning.png")
+    
