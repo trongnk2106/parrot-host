@@ -1,5 +1,7 @@
 import io
 import time
+import scipy
+import torchaudio
 
 from app.base.exception.exception import show_log
 from app.services.ai_services.audio_generation import run_text2speech
@@ -29,18 +31,22 @@ def text2speech(
         t0 = time.time()
 
         # T2S process
-        audio_result = run_text2speech(request_data['prompt'], request_data['config'])
+        audio_result, sample_rate = run_text2speech(request_data['prompt'], request_data['config'])
         t1 = time.time()
         print("[INFO] Time generated: ", t1-t0)
         
-        # Save the AUDIO to the BytesIO object as bytes
-        audio_bytes_io = io.BytesIO()
-        audio_result.save(audio_bytes_io, format="wav")
+        # # Save the AUDIO to the BytesIO object as bytes
+        scipy.io.wavfile.write(f"./tmp/{celery_task_id}.wav", rate=sample_rate, data=audio_result)
         
+        # load file to byte buffer
+        waveform, sample_rate = torchaudio.load(f'./tmp/{celery_task_id}.wav')
+        byte_buffer = io.BytesIO()
+        torchaudio.save(byte_buffer, waveform, sample_rate, format='wav')
+
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.wav"
         minio_client.minio_upload_file(
-            content=audio_bytes_io,
+            content=byte_buffer,
             s3_key=s3_key
         )
         t2 = time.time()

@@ -1,5 +1,8 @@
 import io
+import os
+import torchaudio
 import time
+from audiocraft.data.audio import audio_write
 
 from app.base.exception.exception import show_log
 from app.services.ai_services.audio_generation import run_audiogen
@@ -20,18 +23,24 @@ def audio(
         result = '' 
         t0 = time.time()
         # MG process
-        audio_result = run_audiogen(request_data['prompt'], request_data['config'])
+        audio_result, sample_rate = run_audiogen(request_data['prompt'], request_data['config']) #Tensor
         t1 = time.time()
         print("[INFO] Time generated: ", t1-t0)
 
-        # Save audio_result ro the BytesIO object as bytes
-        audio_bytes_io = io.BytesIO()
-        audio_result.save(audio_bytes_io, format="wav")
+        # Save audio_result t0 file *.wav
+        if os.path.exists("./tmp") is False:
+            os.makedirs("./tmp")
+        audio_write(f"./tmp/{celery_task_id}", audio_result.cpu(), sample_rate, strategy="loudness", loudness_compressor=True)
+
+        # Read file 1.wav and convert to byte buffer -> upload to MinIO
+        waveform, sample_rate = torchaudio.load(f'./tmp/{celery_task_id}.wav')
+        byte_buffer = io.BytesIO()
+        torchaudio.save(byte_buffer, waveform, sample_rate, format='wav')
 
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.wav"
         minio_client.minio_upload_file(
-            content=audio_bytes_io,
+            content=byte_buffer,
             s3_key=s3_key
         )
 
@@ -82,3 +91,14 @@ def audio(
     except Exception as e:
         print(e)
         return False, None, str(e)
+
+
+if __name__ == "__main__":
+    audio(
+        celery_task_id="test",
+        request_data={
+            "task_id": "test",
+            "prompt": "dog bark",
+            "config": {}
+        }
+    )

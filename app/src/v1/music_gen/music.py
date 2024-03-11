@@ -1,4 +1,6 @@
+import scipy
 import io
+import os
 import time
 
 from app.base.exception.exception import show_log
@@ -24,9 +26,17 @@ def music(
         t1 = time.time()
         print("[INFO] Time generated: ", t1-t0)
 
-        # Save music_result ro the BytesIO object as bytes
+        # # Save music_result ro the BytesIO object as bytes
+        if os.path.exists(f"./tmp") is False:
+            os.makedirs(f"./tmp")
+        scipy.io.wavfile.write(f"./tmp/{celery_task_id}.wav", rate=music_result["sampling_rate"], data=music_result["audio"])
+        
+
+        # Read the file as bytes
         music_bytes_io = io.BytesIO()
-        music_result.save(music_bytes_io, format="wav")
+        with open(f"./tmp/{celery_task_id}.wav", "rb") as f:
+            music_bytes_io.write(f.read())
+
 
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.wav"
