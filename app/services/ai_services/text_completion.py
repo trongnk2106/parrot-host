@@ -15,6 +15,9 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 from transformers import AutoTokenizer, AutoModel
+import torch.nn.functional as F
+from torch import Tensor
+from transformers import AutoTokenizer, AutoModel
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -74,24 +77,19 @@ def run_text_completion_gemma_7b(messages: list, configs: dict):
 
     return outputs[0]["generated_text"][len(prompt):]
 
-# def average_pool(last_hidden_states: Tensor,
-#                     attention_mask: Tensor) -> Tensor:
-#         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
-#         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
-
 
 def run_gte_large(prompt: str, configs: dict):
 
-    
     def average_pool(last_hidden_states: Tensor,
-                    attention_mask: Tensor) -> Tensor:
+                     attention_mask: Tensor) -> Tensor:
         last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
         return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
+    
     try: 
         tokenizer, model = RESOURCE_CACHE["parrot_gte_task"]
-    except KeyError:
-        raise Exception("GTE large model is not loaded")
+    except KeyError as err:
+        raise Exception(f"GTE large model is not loaded. {str(err)}")
 
     try: 
         
@@ -100,11 +98,11 @@ def run_gte_large(prompt: str, configs: dict):
         ]
                 
        # Tokenize the input texts
-        batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt').to("DEVICE")
+        batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt').to(DEVICE)
         outputs = model(**batch_dict)
         embeddings = average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
 
-
-        return embeddings
+        result = embeddings.cpu().detach().numpy()
+        return result
     except Exception as e:
         raise Exception(f"Error in GTE large model: {str(e)}")

@@ -15,8 +15,9 @@ def text_embedding(
                 f"celery_task_id: {celery_task_id}"
     )
     try:
-        response = run_gte_large(request_data['messages'], request_data['config'])
-        if not response:
+        response = run_gte_large(request_data['messages'], request_data['config']).tolist()
+
+        if len(response) == 0:
             show_log(
                 message="function: text_embedding"
                         f"celery_task_id: {celery_task_id}, "
@@ -29,7 +30,9 @@ def text_embedding(
         send_done_gte_task(
             request_data=DoneGTERequest(
                 task_id=request_data['task_id'],
-                response=response
+                response={
+                    "response": response
+                }
             )
         )
 
