@@ -53,7 +53,7 @@ if "parrot_gte_task" in ENABLED_TASKS:
     print(f"[INFO] Loading GTE model ...")
     
     tokenizer = AutoTokenizer.from_pretrained("thenlper/gte-large")
-    model = AutoModel.from_pretrained("thenlper/gte-large").to("cuda")
+    model = AutoModel.from_pretrained("thenlper/gte-large").to(DEVICE)
 
     RESOURCE_CACHE["parrot_gte_task"] = (tokenizer, model)
 
@@ -83,10 +83,10 @@ def run_text_completion_gemma_7b(messages: list, configs: dict):
 def run_gte_large(prompt: str, configs: dict):
 
     
-    # def average_pool(last_hidden_states: Tensor,
-    #                 attention_mask: Tensor) -> Tensor:
-    #     last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
-    #     return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+    def average_pool(last_hidden_states: Tensor,
+                    attention_mask: Tensor) -> Tensor:
+        last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
+        return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
 
     try: 
         tokenizer, model = RESOURCE_CACHE["parrot_gte_task"]
@@ -100,7 +100,7 @@ def run_gte_large(prompt: str, configs: dict):
         ]
                 
        # Tokenize the input texts
-        batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt').to("cuda")
+        batch_dict = tokenizer(input_texts, max_length=512, padding=True, truncation=True, return_tensors='pt').to("DEVICE")
         outputs = model(**batch_dict)
         embeddings = average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
 
