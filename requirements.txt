@@ -36,8 +36,6 @@ huggingface-hub==0.20.1
 xformers
 open-clip-torch==2.20.0
 
-
-
 av
 flashy
 hydra-core
@@ -50,7 +48,9 @@ torchaudio
 huggingface_hub
 demucs
 librosa
-gradio
 torchmetrics
 encodec
 protobuf
+
+git+https://github.com/facebookresearch/audiocraft.git
+
