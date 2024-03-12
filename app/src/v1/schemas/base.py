@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Union, Any, List, Dict
 
 from pydantic import BaseModel, Field
 
@@ -17,7 +17,7 @@ class DoneLoraTrainnerRequest(BaseModel):
 class UpdateStatusTaskRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     status: str = Field(..., description="status")
-    result: Union[str, None] = Field(None, description="result")
+    result: Union[str, List, Dict, None] = Field(None, description="result")
     vector_result: Any = Field(None, description="vector_result")
 
 
@@ -67,11 +67,18 @@ class LLMRequest(BaseModel):
     messages: list = Field(..., description="messages")
     config: dict = Field(..., description="config")
 
+class GTERequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    prompt: str = Field(..., description="prompt")
+    config: dict = Field(..., description="config")
+
 class DoneLLMRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     response: Any = Field(..., description="url_download")
 
-
+class DoneGTERequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    response: Any = Field(..., description="response")
 
 class T2SRequest(BaseModel):
     task_id: str = Field(..., description="task_id")

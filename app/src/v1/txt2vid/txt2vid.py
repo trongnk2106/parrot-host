@@ -22,18 +22,19 @@ def txt2vid(
         t0 = time.time()
         video_byte_io = run_txt2vid(request_data['prompt'], request_data['config'])
         t1 = time.time()
-        print("[INFO] Time generated: ", t1-t0)
+        show_log(f"Time generated: {t1-t0}")
+
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.mp4"
-        minio_client.minio_upload_file(
+        result = minio_client.minio_upload_file(
             content=video_byte_io,
             s3_key=s3_key
         )
         
         t2 = time.time()
-        print("[INFO] Time upload to storage", t2-t1)
+        show_log(f"Time upload to storage {t2-t1}")
+        show_log(f"Result URL: {result}")
         
-        result = f"/parrot-prod/{s3_key}"
         # update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -42,13 +43,7 @@ def txt2vid(
                 result=result
             )
         )
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="TXT2VID",
-                percent=50
-            )
-        )
+
         if not response:
             show_log(
                 message="function: txt2vid "
@@ -63,14 +58,6 @@ def txt2vid(
             request_data=DoneSDRequest(
                 task_id=request_data['task_id'],
                 url_download=result
-            )
-        )
-
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="TXT2VID",
-                percent=90
             )
         )
         return True, response, None

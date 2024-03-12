@@ -47,8 +47,9 @@ spacy
 torchaudio
 demucs
 librosa
-gradio
 torchmetrics
 encodec
 protobuf
-audiocraft
+
+git+https://github.com/facebookresearch/audiocraft.git
+

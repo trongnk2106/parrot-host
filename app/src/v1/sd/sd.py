@@ -22,7 +22,7 @@ def sd(
         # SD process
         image_result = run_sd(request_data['prompt'], request_data['config'])
         t1 = time.time()
-        print("[INFO] Time generated: ", t1-t0)
+        show_log(f"Time generated: {t1-t0}")
         
         # Save the PIL image to the BytesIO object as bytes
         image_bytes_io = io.BytesIO()
@@ -30,15 +30,15 @@ def sd(
         
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.png"
-        minio_client.minio_upload_file(
+        result = minio_client.minio_upload_file(
             content=image_bytes_io,
             s3_key=s3_key
         )
         
         t2 = time.time()
-        print("[INFO] Time upload to storage", t2-t1)
-        
-        result = f"/parrot-prod/{s3_key}"
+        show_log(f"Time upload to storage {t2-t1}")
+        show_log(f"Result URL: {result}")
+
         # Update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -47,14 +47,6 @@ def sd(
                 result=result
             )
         )
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="SD",
-                percent=50
-            )
-        )
-
         if not response:
             show_log(
                 message="function: sd, "
@@ -69,14 +61,6 @@ def sd(
             request_data=DoneSDRequest(
                 task_id=request_data['task_id'],
                 url_download=result
-            )
-        )
-
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="SD",
-                percent=90
             )
         )
         return True, response, None

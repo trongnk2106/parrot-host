@@ -32,5 +32,7 @@ class MinioClient:
                 length=-1,
                 part_size=self.part_size if not part_size else part_size,
             )
+
+            return f"https://{self.minio_url}/{self.minio_bucket_name}/{s3_key}"
         except Exception as e:
             raise RuntimeError('Upload error for key "%s".' % s3_key) from e

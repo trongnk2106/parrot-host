@@ -4,15 +4,16 @@ import json
 from base64 import b64encode 
 
 
-base_url = "https://api.joinparrot.ai/v1"
+# base_url = "https://api.joinparrot.ai/v1"
+base_url = "http://0.0.0.0:8000/v1"
 
 def get_token():
     """
     This function performs addition of two numbers taken as command-line arguments.
     """
     parser = argparse.ArgumentParser(description="Get Token for Parrot Host")
-    parser.add_argument("-username", type=str, help="Your Parrot username")
-    parser.add_argument("-password", type=str, help="Your Parrot password")
+    parser.add_argument("--username", type=str, help="Your Parrot username")
+    parser.add_argument("--password", type=str, help="Your Parrot password")
 
     args = parser.parse_args()
 
@@ -29,10 +30,10 @@ def get_token():
 
     # obtain the token
     token = response.json()["data"]["access_token"]
-    print(token)
+    print("YOUR TOKEN:\n", token)
     return args.username, token
 
-def add_token_to_env(source_file, target_file, old_text, new_text):
+def replace_text_in_file(source_file, target_file, old_text, new_text):
     """
     Replaces occurrences of old_text with new_text in a file and saves the result to a new file.
 
@@ -56,9 +57,7 @@ def add_token_to_env(source_file, target_file, old_text, new_text):
         print(f"Error: ENV temaplte file '{source_file}' not found.")
 
 
-
-
 if __name__ == "__main__":
     username, token = get_token()
-    add_token_to_env('.env_template', '.env_template', "<PUT_YOUR_USERNAME_HERE>", username)
-    add_token_to_env('.env_template', '.env', '<PUT_YOUR_TOKEN_HERE>', token)
+    replace_text_in_file('.env_template', '.env_template', "<PUT_YOUR_USERNAME_HERE>", username)
+    replace_text_in_file('.env_template', '.env', '<PUT_YOUR_TOKEN_HERE>', token)
