@@ -18,7 +18,7 @@ This project requires a setup that meets the following criteria to ensure stable
   #### Checking and Installing G++
   - To check the current version of G++ installed, open a terminal and type `g++ --version`. If G++ is not installed on your system, you will need to install it via your operating system's package manager.
 
-- **GPU**: If your system includes a GPU, a minimum of **12GB VRAM** is required for **image generation tasks**. For **LoRA Training tasks**, **LLMs** and **video generation tasks**, a minimum of **16GB VRAM** is required.
+- **GPU**: If your system includes a GPU, should have at least **12GB VRAM** for **image generation** tasks, **48GB VRAM** for **video generation** tasks, and **16GB VRAM** for **LoRA Training** tasks and **LLMs**.
 
   #### Checking VRAM
   - You can use a tool like `nvidia-smi` on systems with NVIDIA GPUs to check VRAM capacity.
