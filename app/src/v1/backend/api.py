@@ -257,7 +257,7 @@ def send_done_audiogen_task(request_data: DoneSDRequest):
                 "Authorization": f"Bear {JWT_TOKEN}",
                 "Content-Type": "application/json"
             },
-            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_audio_gen_task",
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/send_done_task",
             json=request_data.dict()
         )
         if response.status_code == 200:

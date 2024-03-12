@@ -6,8 +6,8 @@ from audiocraft.data.audio import audio_write
 
 from app.base.exception.exception import show_log
 from app.services.ai_services.audio_generation import run_audiogen
-from app.src.v1.backend.api import (send_progress_task, update_status_for_task, send_done_audiogen_task)
-from app.src.v1.schemas.base import (DoneAudioGenRequest, AudioGenRequest, SendProgressTaskRequest, UpdateStatusTaskRequest)
+from app.src.v1.backend.api import (update_status_for_task, send_done_audiogen_task)
+from app.src.v1.schemas.base import (DoneAudioGenRequest, AudioGenRequest, UpdateStatusTaskRequest)
 from app.utils.services import minio_client
 
 
@@ -23,9 +23,9 @@ def audio(
         result = '' 
         t0 = time.time()
         # MG process
-        audio_result, sample_rate = run_audiogen(request_data['prompt'], request_data['config']) #Tensor
+        audio_result, sample_rate = run_audiogen(request_data['prompt'], request_data['config']) #Tensors
         t1 = time.time()
-        print("[INFO] Time generated: ", t1-t0)
+        show_log(f"Time generated: {t1-t0}")
 
         # Save audio_result t0 file *.wav
         if os.path.exists("./tmp") is False:
@@ -39,15 +39,17 @@ def audio(
 
         # Upload to MinIO
         s3_key = f"generated_result/{request_data['task_id']}.wav"
-        minio_client.minio_upload_file(
+        result = minio_client.minio_upload_file(
             content=byte_buffer,
             s3_key=s3_key
         )
-
         t2 = time.time()
-        print("[INFO] Time upload to storage", t2-t1)
+        # Remove tmp file
+        os.remove(f'./tmp/{celery_task_id}.wav')
 
-        result = f"/parrot-prod/{s3_key}"
+        show_log(f"Time upload to storage: {t2-t1}")
+        show_log(f"Result URL: {result}")
+
         # Update task status
         is_success, response, error = update_status_for_task(
             UpdateStatusTaskRequest(
@@ -56,14 +58,7 @@ def audio(
                 result=result
             )
         )
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="audio_gen",
-                percent=50
-            )
-        )
-
+        
         if not response:
             show_log(
                 message="function: audio, "
@@ -80,25 +75,8 @@ def audio(
                 result=result
             )
         )
-        send_progress_task(
-            SendProgressTaskRequest(
-                task_id=request_data['task_id'],
-                task_type="audio_gen",
-                percent=90
-            )
-        )
+
         return True, response, None
     except Exception as e:
         print(e)
         return False, None, str(e)
-
-
-if __name__ == "__main__":
-    audio(
-        celery_task_id="test",
-        request_data={
-            "task_id": "test",
-            "prompt": "dog bark",
-            "config": {}
-        }
-    )
