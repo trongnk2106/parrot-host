@@ -1,4 +1,4 @@
-from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_damo_task, parrot_llm_gemma_7b_task, parrot_t2s_task, parrot_musicgen_task, parrot_audiogen_task
+from tasks import parrot_sd_task, parrot_sdxl_task, parrot_sdxl_lightning_task, parrot_lora_trainer_task, parrot_txt2vid_damo_task, parrot_llm_gemma_7b_task, parrot_t2s_task, parrot_musicgen_task, parrot_audiogen_task, parrot_gte_task
 
 TASK_MANAGEMENT = {
     "parrot_sd_task": {
@@ -45,5 +45,10 @@ TASK_MANAGEMENT = {
         "queue_name": "audiogen_queue", 
         "task_name": "parrot_audiogen_task",
         "load_model_function": parrot_audiogen_task
+    }, 
+    "parrot_gte_task": {
+        "queue_name": "gte_queue",
+        "task_name": "parrot_gte_task",
+        "load_model_function": parrot_gte_task
     }
 }

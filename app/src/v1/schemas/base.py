@@ -67,11 +67,18 @@ class LLMRequest(BaseModel):
     messages: list = Field(..., description="messages")
     config: dict = Field(..., description="config")
 
+class GTERequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    prompt: str = Field(..., description="prompt")
+    config: dict = Field(..., description="config")
+
 class DoneLLMRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     response: Any = Field(..., description="url_download")
 
-
+class DoneGTERequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    response: Any = Field(..., description="response")
 
 class T2SRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
