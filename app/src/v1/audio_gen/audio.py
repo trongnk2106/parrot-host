@@ -72,7 +72,7 @@ def audio(
         send_done_audiogen_task(
             DoneAudioGenRequest(
                 task_id=request_data['task_id'],
-                result=result
+                url_download=result
             )
         )
 

@@ -69,8 +69,7 @@ def music(
         send_done_musicgen_task(
             DoneMusicGenRequest(
                 task_id=request_data['task_id'],
-                task_type="musicgen",
-                result=result
+                url_download=result
             )
         )
         return True, response, None

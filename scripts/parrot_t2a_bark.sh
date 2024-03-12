@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_t2s_task python3 server.py

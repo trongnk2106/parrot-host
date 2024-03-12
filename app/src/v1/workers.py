@@ -225,14 +225,7 @@ def worker_musicgen(
                 f"celery_task_id: {celery_task_id}, "
                 f"celery_task_name: {celery_task_name}"
     )
-
-    send_progress_task(
-        SendProgressTaskRequest(
-            task_id=request_data['task_id'],
-            task_type="musicgen",
-            percent=10
-        )
-    )
+    
     is_success, response, error = music(
         celery_task_id=celery_task_id,
         request_data=request_data,
@@ -255,14 +248,7 @@ def worker_audiogen(
                 f"celery_task_name: {celery_task_name}"
     )
 
-    send_progress_task(
-        SendProgressTaskRequest(
-            task_id=request_data['task_id'],
-            task_type="audio_gen",
-            percent=10
-        )
-    )
-    is_success, response, error = music(
+    is_success, response, error = audio(
         celery_task_id=celery_task_id,
         request_data=request_data,
     )

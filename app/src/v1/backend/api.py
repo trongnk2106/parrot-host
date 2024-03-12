@@ -9,7 +9,9 @@ from app.src.v1.schemas.base import (
     SendDoneTaskRequest,
     SendFailTaskRequest,
     SendProgressTaskRequest,
-    UpdateStatusTaskRequest
+    UpdateStatusTaskRequest,
+    DoneAudioGenRequest,
+    DoneMusicGenRequest
 )
 
 from app.utils.services import JWT_TOKEN
@@ -218,10 +220,10 @@ def send_done_t2s_task(request_data: DoneT2SRequest):
     try:
         response = requests.post(
             headers={
-                "Authorization": f"Bear {JWT_TOKEN}",
+                "Authorization": f"Bearer {JWT_TOKEN}",
                 "Content-Type": "application/json"
             },
-            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_t2s_task",
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/send_done_task",
             json=request_data.dict()
         )
         if response.status_code == 200:
@@ -232,14 +234,14 @@ def send_done_t2s_task(request_data: DoneT2SRequest):
         show_log(message=e, level="error")
         return False, None, e
 
-def send_done_musicgen_task(request_data: DoneSDRequest):
+def send_done_musicgen_task(request_data: DoneMusicGenRequest):
     try:
         response = requests.post(
             headers={
-                "Authorization": f"Bear {JWT_TOKEN}",
+                "Authorization": f"Bearer {JWT_TOKEN}",
                 "Content-Type": "application/json"
             },
-            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_musicgen_task",
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/send_done_task",
             json=request_data.dict()
         )
         if response.status_code == 200:
@@ -250,11 +252,11 @@ def send_done_musicgen_task(request_data: DoneSDRequest):
         show_log(message=e, level="error")
         return False, None, e
 
-def send_done_audiogen_task(request_data: DoneSDRequest):
+def send_done_audiogen_task(request_data: DoneAudioGenRequest):
     try:
         response = requests.post(
             headers={
-                "Authorization": f"Bear {JWT_TOKEN}",
+                "Authorization": f"Bearer {JWT_TOKEN}",
                 "Content-Type": "application/json"
             },
             url=f"{os.getenv('HOST_BACKEND_SERVICE')}/send_done_task",
