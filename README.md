@@ -47,7 +47,7 @@ Continue with the [Basic Usage](#Basic-Usage) instructions
 
 1. Login and get your TOKEN 
 ```bash
-python get_token_and_create_env.py -username <your_user_name> -password <your_password>  
+python get_token_and_create_env.py --username <your_user_name> --password <your_password>  
 ```
 
 1. This project supports three types of tasks with Parrot Host
