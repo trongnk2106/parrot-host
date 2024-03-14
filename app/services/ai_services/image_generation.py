@@ -101,6 +101,7 @@ if "parrot_lora_trainer_task" in ENABLED_TASKS:
     # khởi tạo những thứ cần thiết để train
 
 def run_lora_trainer(config):
+    # logic here
     return "/workspace/parrot-host/tmp/Trong1.safetensors"
 
 def run_sd(prompt: str, config: dict):

@@ -1,4 +1,4 @@
-from app.src.v1.lora_trainer_v1.v11.lora_trainer import lora_trainer
+from app.src.v1.lora_trainer_v1.lora_trainer import lora_trainer
 
 
 

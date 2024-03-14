@@ -69,20 +69,18 @@ def lora_trainer(
     )
     try:
         result = ''
-        #TODO: 
         # 1. create dataset
         user_uuid = create_uuid_string()
         folder_dataset = f"./tmp/{user_uuid}"
         create_dataset(request_data, folder_dataset)
 
-        # 2. gọi hàm train để lấy path model
+        # 2. gọi hàm train để train và lấy modelpath
         t0 = time.time()
         model_path = run_lora_trainer(folder_dataset)
         t1 = time.time()
         show_log(f"Time generated: {t1-t0}")
 
         # 3. Save the model to MinIO
-        # read model_path and convert to byte buffer -> upload to MinIO
         byte_buffer = io.BytesIO()
         with open(model_path, "rb") as file:
             byte_buffer.write(file.read())
@@ -95,7 +93,7 @@ def lora_trainer(
         )
 
         t2 = time.time()
-        os.remove(model_path)
+        # os.remove(model_path)
         show_log(f"Time upload to storage {t2-t1}")
         show_log(f"Result URL: {result}")
 
