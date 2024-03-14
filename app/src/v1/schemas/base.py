@@ -72,6 +72,11 @@ class GTERequest(BaseModel):
     prompt: str = Field(..., description="prompt")
     config: dict = Field(..., description="config")
 
+class MistralEmbeddingRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    text: str = Field(..., description="text")
+    config: dict = Field(..., description="config")
+
 class DoneLLMRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     response: Any = Field(..., description="url_download")
@@ -80,6 +85,10 @@ class DoneGTERequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     response: Any = Field(..., description="response")
 
+class DoneMistralEmbeddingRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    response: Any = Field(..., description="response")
+    
 class T2SRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     prompt: str = Field(..., description="prompt")

@@ -8,7 +8,8 @@ from tasks import (
     parrot_t2s_task, 
     parrot_musicgen_task, 
     parrot_audiogen_task, 
-    parrot_gte_task
+    parrot_gte_task, 
+    parrot_mistral_embeddings_task
 )
 
 TASK_MANAGEMENT = {
@@ -61,5 +62,10 @@ TASK_MANAGEMENT = {
         "queue_name": "gte_queue",
         "task_name": "parrot_gte_task",
         "load_model_function": parrot_gte_task
+    }, 
+    "parrot_mistral_embeddings_task": {
+        "queue_name": "mistral_embeddings_queue",
+        "task_name": "parrot_mistral_embeddings_task",
+        "load_model_function": parrot_mistral_embeddings_task
     }
 }
