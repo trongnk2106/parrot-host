@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class LoraTrainnerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
-    prompt: str = Field(..., description="prompt")
+    prompt: list[str] = Field(..., description="prompt")
     minio_input_paths: list[str] = Field(..., description="minio_input_paths")
 
 

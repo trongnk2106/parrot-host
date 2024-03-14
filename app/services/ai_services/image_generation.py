@@ -96,6 +96,13 @@ if "parrot_txt2vid_damo_task" in ENABLED_TASKS:
     RESOURCE_CACHE["parrot_txt2vid_task"] = pipe
 
 
+if "parrot_lora_trainer_task" in ENABLED_TASKS:
+    print(f"[INFO] Loading LoRA Trainer ...")
+    # khởi tạo những thứ cần thiết để train
+
+def run_lora_trainer(config):
+    return "/workspace/parrot-host/tmp/Trong1.safetensors"
+
 def run_sd(prompt: str, config: dict):
     # Load config
     num_inference_steps = config.get("steps", 50)
