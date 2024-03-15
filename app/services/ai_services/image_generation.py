@@ -127,7 +127,6 @@ def run_lora_trainer(config):
 
     try: 
         output_model_path = model.run(data_dir, user_name, sdxl, is_male)
-        print(f"[INFO] Train model successfully: {output_model_path}")
         return output_model_path
     except Exception as e:
         print(e)

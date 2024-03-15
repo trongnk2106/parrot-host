@@ -7,6 +7,9 @@ class LoraTrainnerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     prompt: list[str] = Field(..., description="prompt")
     minio_input_paths: list[str] = Field(..., description="minio_input_paths")
+    is_sdxl: str = Field(..., description="1: SDXL, 0: SD1.5")
+    is_male: str = Field(..., description="1: male, 0: Female")
+
 
 
 class DoneLoraTrainnerRequest(BaseModel):

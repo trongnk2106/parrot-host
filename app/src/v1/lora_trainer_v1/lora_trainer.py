@@ -75,16 +75,14 @@ def lora_trainer(
         create_dataset(request_data, folder_dataset)
         print(f"[INFO] Create dataset successfully: {folder_dataset}")
 
-        # print current directory
-        print(os.getcwd())
 
         # 2. gọi hàm train để train và lấy modelpath
         t0 = time.time()
         trainer_config = {
             "data_dir": os.path.join(os.getcwd(), folder_dataset),
             "user_name": user_uuid, 
-            "sdxl": "0", 
-            "is_male": "1"
+            "sdxl": request_data["is_sdxl"], 
+            "is_male": request_data["is_male"]
         }
         model_path = run_lora_trainer(trainer_config)
         t1 = time.time()
