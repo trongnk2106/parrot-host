@@ -1,19 +1,15 @@
-# import scipy
 import io
 import os
-# import torchaudio
 import time
-# from audiocraft.data.audio import audio_write
 import uuid
 import requests
 import mimetypes
 
 
 from app.base.exception.exception import show_log
-# from app.services.ai_services.audio_generation import run_musicgen
 from app.services.ai_services.image_generation import run_lora_trainer
-from app.src.v1.backend.api import (update_status_for_task, send_done_musicgen_task)
-from app.src.v1.schemas.base import (DoneMusicGenRequest, MusicGenRequest, SendProgressTaskRequest, UpdateStatusTaskRequest, LoraTrainnerRequest, DoneLoraTrainnerRequest)
+from app.src.v1.backend.api import (update_status_for_task, send_done_lora_trainner_task)
+from app.src.v1.schemas.base import (DoneLoraTrainnerRequest, UpdateStatusTaskRequest, LoraTrainnerRequest)
 from app.utils.services import minio_client
 
 def create_uuid_string(): 
@@ -54,9 +50,13 @@ def create_dataset(request_data: LoraTrainnerRequest, folder_dataset: str):
         img_name = download_image(image, folder_dataset)
 
         # create label
-        with open(f"{folder_dataset}/{img_name}.txt", "w") as file:
+        support_img = [".png", ".jpg", ".jpeg", ".PNG", ".JPG", ".JPEG", ".webp", ".bmp"]
+        for i in support_img:
+            if img_name.endswith(i):
+                img_name = img_name.replace(i, ".txt")
+                break
+        with open(f"{folder_dataset}/{img_name}", "w") as file:
             file.write(description)
-
 
 
 def lora_trainer(
@@ -71,14 +71,25 @@ def lora_trainer(
         result = ''
         # 1. create dataset
         user_uuid = create_uuid_string()
-        folder_dataset = f"./tmp/{user_uuid}"
+        folder_dataset = f"app/services/ai_services/lora_trainer/tmp/{user_uuid}"
         create_dataset(request_data, folder_dataset)
+        print(f"[INFO] Create dataset successfully: {folder_dataset}")
+
+        # print current directory
+        print(os.getcwd())
 
         # 2. gọi hàm train để train và lấy modelpath
         t0 = time.time()
-        model_path = run_lora_trainer(folder_dataset)
+        trainer_config = {
+            "data_dir": os.path.join(os.getcwd(), folder_dataset),
+            "user_name": user_uuid, 
+            "sdxl": "0", 
+            "is_male": "1"
+        }
+        model_path = run_lora_trainer(trainer_config)
         t1 = time.time()
         show_log(f"Time generated: {t1-t0}")
+        print(f"[INFO] Train model successfully: {model_path}")
 
         # 3. Save the model to MinIO
         byte_buffer = io.BytesIO()
@@ -114,8 +125,8 @@ def lora_trainer(
             return False
 
         # 5. Send done task
-        send_done_musicgen_task(
-            DoneMusicGenRequest(
+        send_done_lora_trainner_task(
+            DoneLoraTrainnerRequest(
                 task_id=request_data['task_id'],
                 url_download=result
             )

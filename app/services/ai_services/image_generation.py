@@ -2,6 +2,7 @@ import io
 import os
 import sys
 import time
+import subprocess
 
 from dotenv import load_dotenv
 _ = load_dotenv()
@@ -98,11 +99,40 @@ if "parrot_txt2vid_damo_task" in ENABLED_TASKS:
 
 if "parrot_lora_trainer_task" in ENABLED_TASKS:
     print(f"[INFO] Loading LoRA Trainer ...")
-    # khởi tạo những thứ cần thiết để train
+    from app.services.ai_services.lora_trainer.trainer import LoraTraner
+    RESOURCE_CACHE["parrot_lora_trainer_task"] = LoraTraner()
+
+    # download model
+    subprocess.run(['python', 'app/services/ai_services/lora_trainer/download_fromhub.py'], check=True)
+
 
 def run_lora_trainer(config):
-    # logic here
-    return "/workspace/parrot-host/tmp/Trong1.safetensors"
+    try: 
+        model = RESOURCE_CACHE["parrot_lora_trainer_task"]
+        print("[INFO] LoRA Trainer loaded")
+    except Exception as e:
+        print("[ERROR] LoRA Trainer not loaded")
+        return None
+
+    try: 
+        data_dir = config.get("data_dir")
+        user_name = config.get("user_name")
+        sdxl = config.get("sdxl", False)
+        is_male = config.get("is_male", True)
+        print(f"[INFO] Get parameters successfully. data_dir: {data_dir}, user_name: {user_name}, sdxl: {sdxl}, is_male: {is_male}")
+    except: 
+        print('[ERROR] Missing required parameters')
+        return None
+
+
+    try: 
+        output_model_path = model.run(data_dir, user_name, sdxl, is_male)
+        print(f"[INFO] Train model successfully: {output_model_path}")
+        return output_model_path
+    except Exception as e:
+        print(e)
+        return None
+    # return "/workspace/parrot-host/tmp/Trong1.safetensors"
 
 def run_sd(prompt: str, config: dict):
     # Load config
