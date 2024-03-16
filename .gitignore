@@ -178,3 +178,4 @@ local-test/*
 *.pt
 ./tmp/
 tmp/
+pretrained_model/*
