@@ -7,7 +7,6 @@ resources/binary_function/*
 
 # C extensions
 *.so
-.env*
 .env
 
 # Distribution / packaging
@@ -177,3 +176,7 @@ local-test/*
 *.safetensors 
 *.pt
 ./tmp/
+tmp/
+pretrained_model/*
+ai_data_1.json
+train.jsonl

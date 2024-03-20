@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_gemma_lora_trainer_task python3 test_ai.py

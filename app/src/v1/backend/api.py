@@ -11,7 +11,8 @@ from app.src.v1.schemas.base import (
     SendProgressTaskRequest,
     UpdateStatusTaskRequest,
     DoneAudioGenRequest,
-    DoneMusicGenRequest
+    DoneMusicGenRequest, 
+    DoneGemmaTrainerRequest
 )
 
 from app.utils.services import JWT_TOKEN
@@ -197,6 +198,23 @@ def send_done_llm_task(request_data: DoneLLMRequest):
         show_log(message=e, level="error")
         return False, None, e
 
+
+def send_done_gemma_trainer_task(request_data: DoneGemmaTrainerRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bearer {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_gemma_trainer_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None  
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
 
 def send_done_gte_task(request_data: DoneGTERequest):
     try:

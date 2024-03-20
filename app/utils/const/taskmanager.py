@@ -9,7 +9,8 @@ from tasks import (
     parrot_musicgen_task, 
     parrot_audiogen_task, 
     parrot_gte_task, 
-    parrot_mistral_embeddings_task
+    parrot_mistral_embeddings_task,
+    parrot_gemma_lora_trainer_task
 )
 
 TASK_MANAGEMENT = {
@@ -67,5 +68,10 @@ TASK_MANAGEMENT = {
         "queue_name": "mistral_embeddings_queue",
         "task_name": "parrot_mistral_embeddings_task",
         "load_model_function": parrot_mistral_embeddings_task
+    },
+    "parrot_gemma_lora_trainer_task": {
+        "queue_name": "gemma_trainer_queue",
+        "task_name": "parrot_gemma_lora_trainer_task",
+        "load_model_function": parrot_gemma_lora_trainer_task
     }
 }

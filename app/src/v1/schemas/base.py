@@ -3,6 +3,17 @@ from typing import Union, Any, List, Dict
 from pydantic import BaseModel, Field
 
 
+class GemmaTrainerRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    data : list[str] = Field(..., description="data")
+    num_train_epochs: int = Field(..., description="num_train_epochs")
+
+
+class DoneGemmaTrainerRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    url_download: Any = Field(..., description="url_download")
+
+
 class LoraTrainnerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     prompt: str = Field(..., description="prompt")
