@@ -10,7 +10,8 @@ from tasks import (
     parrot_audiogen_task, 
     parrot_gte_task, 
     parrot_mistral_embeddings_task,
-    parrot_gemma_lora_trainer_task
+    parrot_gemma_lora_trainer_task,
+    parrot_img2vid_task
 )
 
 TASK_MANAGEMENT = {
@@ -73,5 +74,10 @@ TASK_MANAGEMENT = {
         "queue_name": "gemma_trainer_queue",
         "task_name": "parrot_gemma_lora_trainer_task",
         "load_model_function": parrot_gemma_lora_trainer_task
+    },
+    "parrot_img2vid_task": {
+        "queue_name": "img2vid_queue",
+        "task_name": "parrot_img2vid_task",
+        "load_model_function": parrot_img2vid_task
     }
 }

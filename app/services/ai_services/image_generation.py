@@ -16,10 +16,12 @@ from PIL import Image
 import imageio
 import numpy as np
 import torch
-from diffusers import (AutoPipelineForImage2Image, DiffusionPipeline, DPMSolverMultistepScheduler, EulerDiscreteScheduler, StableDiffusionXLPipeline, UNet2DConditionModel, StableDiffusionImg2ImgPipeline)
+from diffusers import (AutoPipelineForImage2Image, DiffusionPipeline, DPMSolverMultistepScheduler, EulerDiscreteScheduler, 
+                       StableDiffusionXLPipeline, UNet2DConditionModel, StableDiffusionImg2ImgPipeline, 
+                       StableVideoDiffusionPipeline)
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
-from diffusers.utils import load_image
+from diffusers.utils import load_image, export_to_video
 
 # Register
 ENABLED_TASKS = os.environ.get('ENABLED_TASKS', '').split(',')
@@ -94,8 +96,14 @@ if "parrot_txt2vid_damo_task" in ENABLED_TASKS:
     pipe.enable_model_cpu_offload()
     pipe.enable_vae_slicing()
     RESOURCE_CACHE["parrot_txt2vid_task"] = pipe
+    
+    
+if "parrot_img2vid_task" in ENABLED_TASKS:
+    pipe = StableVideoDiffusionPipeline.from_pretrained("stabilityai/stable-video-diffusion-img2vid-xt", torch_dtype=torch.float16, variant="fp16").to("cuda")
 
-
+    RESOURCE_CACHE["parrot_img2vid_task"] = pipe
+    
+    
 def run_sd(prompt: str, config: dict):
     # Load config
     num_inference_steps = config.get("steps", 50)
@@ -328,6 +336,42 @@ def run_txt2vid(prompt: str, config: dict):
     
     video = to_video(frames, fps)
     return video
+
+
+def run_img2vid(img: str, config: dict):
+    
+    fps = config.get("fps", 8)
+    seed = config.get("seed", -1)
+    num_inference_steps = config.get("steps", 25)
+    num_frames = config.get("frames", 16)
+    height = config.get("height", 576)
+    width = config.get("width", 1024)
+    decode_chunk_size = config.get("decode_chunk_size", 8)
+    output_video_path = config.get("output_video_path", "./generated.mp4")
+    if seed == -1:
+        seed = random.randint(0, 1000000)
+    
+    image = load_image(img)
+    image = image.resize((1024, 576))
+
+    generator = torch.manual_seed(seed)
+    frames = RESOURCE_CACHE["parrot_img2vid_task"](
+        image, 
+        width=width,
+        height=height,
+        decode_chunk_size = decode_chunk_size,
+        num_inference_steps=num_inference_steps,
+        num_frames=num_frames,
+        generator=generator
+    ).frames[0]
+    
+    export_to_video(frames, output_video_path = "generated.mp4", fps=fps)
+    video_byte_io = io.BytesIO()
+
+    with open(output_video_path, 'rb') as f:
+        video_byte_io.write(f.read())
+            
+    return video_byte_io
 
 
 def to_video(frames: list[np.ndarray], fps: int) -> io.BytesIO:

@@ -2,7 +2,10 @@ from app.base.exception.exception import show_log
 from app.src.v1.backend.api import send_progress_task
 from app.src.v1.lora_trainner.lora_trainner import lora_trainner
 from app.src.v1.lora_trainner.repo_init_resource_files import init_resource_files_from_urls
-from app.src.v1.schemas.base import LoraTrainnerRequest, SendProgressTaskRequest, SDXLRequest, SDRequest, T2SRequest, MusicGenRequest, AudioGenRequest, GTERequest, MistralEmbeddingRequest, DoneMistralEmbeddingRequest, DoneGTERequest, GemmaTrainerRequest
+from app.src.v1.schemas.base import LoraTrainnerRequest, SendProgressTaskRequest, SDXLRequest, \
+        SDRequest, T2SRequest, MusicGenRequest, AudioGenRequest, GTERequest, \
+        MistralEmbeddingRequest, GemmaTrainerRequest, I2VRequest
+        
 from app.src.v1.sd.sd import sd
 from app.src.v1.sdxl.sdxl import sdxl
 from app.src.v1.sdxl.sdxl import sdxl_lightning
@@ -14,6 +17,38 @@ from app.src.v1.audio_gen.audio import audio
 from app.src.v1.gte_embedding.gte import text_embedding as gte_text_embedding
 from app.src.v1.mistral_embeddings.mistral_embeddings import text_embedding as mistral_text_embedding
 from app.src.v1.gemma_trainer.gemma_trainer import gemma_trainer
+from app.src.v1.img2vid.img2vid import img2vid
+
+
+def worker_img2vid(
+    celery_task_id: str,
+    celery_task_name: str,
+    request_data: I2VRequest,
+):
+    show_log(
+        message="function: worker_img2vid"
+                f"celery_task_id: {celery_task_id}, "
+                f"celery_task_name: {celery_task_name}"
+    )
+
+    send_progress_task(
+        SendProgressTaskRequest(
+            task_id=request_data['task_id'],
+            task_type="TXT2VID",
+            percent=10
+        )
+    )
+    is_success, response, error = img2vid(
+        celery_task_id=celery_task_id,
+        request_data=request_data,
+    )
+    
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
 
 def worker_gemma_trainer(
     celery_task_id: str,

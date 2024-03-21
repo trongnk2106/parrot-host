@@ -3,6 +3,15 @@ from typing import Union, Any, List, Dict
 from pydantic import BaseModel, Field
 
 
+class I2VRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    img_url: str = Field(..., description="image url")
+    config: dict = Field(..., description="config")
+class DoneI2VRequest(BaseModel):
+    task_id: str = Field(..., description="task_id")
+    url_download: Any = Field(..., description="url_download")
+
+
 class GemmaTrainerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     data : list[str] = Field(..., description="data")
