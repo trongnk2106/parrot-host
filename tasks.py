@@ -272,8 +272,6 @@ def parrot_llm_gemma_7b_task(self, request_data):
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
 
-
-
 def parrot_t2s_task(self, request_data):
     result = None
     try:
@@ -312,7 +310,6 @@ def parrot_t2s_task(self, request_data):
                         f" index: {self.request.retries}"
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
-
 
 def parrot_musicgen_task(self, request_data):
     result = None
@@ -353,7 +350,6 @@ def parrot_musicgen_task(self, request_data):
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
 
-
 def parrot_audiogen_task(self, request_data):
     result = None
     try:
@@ -393,7 +389,6 @@ def parrot_audiogen_task(self, request_data):
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
 
-
 def parrot_gte_task(self, request_data):
     result = None
     try:
@@ -432,7 +427,6 @@ def parrot_gte_task(self, request_data):
                         f" index: {self.request.retries}"
             )
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
-
 
 def parrot_mistral_embeddings_task(self, request_data):
     result = None

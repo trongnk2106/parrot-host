@@ -46,7 +46,7 @@ elif (torch.has_mps or torch.backends.mps.is_available()) and ALLOW_MPS:
 
 print(f"[INFO] Using device: {DEVICE}")
 
-config_dict = {
+gemma_config_dict = {
     "num_train_epochs": 1,
     "per_device_train_batch_size": 1,
     "per_device_eval_batch_size": 1,
@@ -76,17 +76,18 @@ if "parrot_gemma_lora_trainer_task" in ENABLED_TASKS:
             bnb_4bit_compute_dtype="float16", 
             bnb_4bit_use_double_quant=False, 
         )
+        hf_token = os.environ.get('HUGGINGFACE_TOKEN', "")
         from huggingface_hub import login
-        login()
-        # hf_token = os.environ.get('HUGGINGFACE_API_KEY', "")
+        login(token=hf_token)
+        
         model_name = "google/gemma-7b-it"
 
-        tokenizer = AutoTokenizer.from_pretrained(model_name, )
+        tokenizer = AutoTokenizer.from_pretrained(model_name, token=hf_token)
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "right"
         model = AutoModelForCausalLM.from_pretrained(model_name,
                                     quantization_config = bnb_config,
-                                    device_map = "auto", )
+                                    device_map = "auto", token = hf_token)
         
         RESOURCE_CACHE["parrot_gemma_lora_trainer_task"] = {}
         RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["tokenizer"] =tokenizer
@@ -133,7 +134,10 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
         os.makedirs(output_dir)
         print(f"Created directory: {output_dir}")
     else: 
-        print(f"Directory {output_dir} already exists")
+        print(f"Directory {output_dir} already exists. Let's recreate it.")
+        shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
+        print(f"Recreated directory: {output_dir}")
 
     try :
         peft_config = LoraConfig(
@@ -146,27 +150,28 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
         )
         try :
             dataset_dict = {"text" : data}
-            dataset = Dataset.from_dict(dataset_dict)    
+            dataset = Dataset.from_dict(dataset_dict)   
+            print(f"Created dataset successfully.") 
         except:
-            print('formatting error')
+            print('[ERROR]: Error in creating dataset. Please check the input data.')
                 
         training_arguments = TrainingArguments(
             output_dir=output_dir,
-            num_train_epochs=config_dict['num_train_epochs'] if num_train_epochs is None else num_train_epochs,
-            per_device_train_batch_size=config_dict['per_device_train_batch_size'],
-            gradient_accumulation_steps=config_dict['gradient_accumulation_steps'],
-            optim=config_dict['optim'],
-            save_steps=config_dict['save_steps'],
-            logging_steps=config_dict['logging_steps'],
-            learning_rate=config_dict['learning_rate'],
-            weight_decay=config_dict['weight_decay'],
-            fp16=config_dict['fp16'],
-            bf16=config_dict['bf16'],
-            max_grad_norm=config_dict['max_grad_norm'],
-            max_steps=config_dict['max_steps'],
-            warmup_ratio=config_dict['warmup_ratio'],
-            group_by_length=config_dict['group_by_length'],
-            lr_scheduler_type=config_dict['lr_scheduler_type'],
+            num_train_epochs=gemma_config_dict['num_train_epochs'] if num_train_epochs is None else num_train_epochs,
+            per_device_train_batch_size=gemma_config_dict['per_device_train_batch_size'],
+            gradient_accumulation_steps=gemma_config_dict['gradient_accumulation_steps'],
+            optim=gemma_config_dict['optim'],
+            # save_steps=gemma_config_dict['save_steps'],
+            logging_steps=gemma_config_dict['logging_steps'],
+            learning_rate=gemma_config_dict['learning_rate'],
+            weight_decay=gemma_config_dict['weight_decay'],
+            fp16=gemma_config_dict['fp16'],
+            bf16=gemma_config_dict['bf16'],
+            max_grad_norm=gemma_config_dict['max_grad_norm'],
+            max_steps=gemma_config_dict['max_steps'],
+            warmup_ratio=gemma_config_dict['warmup_ratio'],
+            group_by_length=gemma_config_dict['group_by_length'],
+            lr_scheduler_type=gemma_config_dict['lr_scheduler_type'],
             report_to="tensorboard",
         )
         
@@ -177,10 +182,10 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
             peft_config=peft_config,
             dataset_text_field="text",
             # formatting_func=format_prompts_fn,
-            max_seq_length=config_dict['max_seq_length'],
+            max_seq_length=gemma_config_dict['max_seq_length'],
             tokenizer=RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["tokenizer"],
             args=training_arguments,
-            packing=config_dict['packing'],
+            packing=gemma_config_dict['packing'],
         )
         trainer.train()
         trainer.model.save_pretrained(output_dir)
