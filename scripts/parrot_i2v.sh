@@ -1,0 +1,1 @@
+ENABLED_TASKS=parrot_img2vid_task python3 server.py

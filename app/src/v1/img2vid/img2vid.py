@@ -2,14 +2,14 @@ import time
 from app.base.exception.exception import show_log
 from app.src.v1.backend.api import update_status_for_task, send_progress_task, send_done_sd_task
 from app.src.v1.schemas.base import UpdateStatusTaskRequest, \
-    SDRequest, DoneI2VRequest
+     DoneI2VRequest, I2VRequest
 from app.utils.services import minio_client
 from app.services.ai_services.image_generation import run_img2vid
 
 
 def img2vid(
         celery_task_id: str,
-        request_data: SDRequest,
+        request_data: I2VRequest,
 ):
     show_log(
         message="function: img2vid"
