@@ -19,7 +19,7 @@ from transformers import (AutoTokenizer, AutoModel,
                         logging,
                         pipeline)
 
-from peft import LoraConfig, PeftModel
+from peft import LoraConfig, PeftModel, prepare_model_for_kbit_training, get_peft_model
 from trl import SFTTrainer
 from datasets import load_dataset, Dataset
 from app.utils.base import remove_documents
@@ -94,6 +94,40 @@ if "parrot_gemma_lora_trainer_task" in ENABLED_TASKS:
         print(f"[INFO] Load model gemma success.")
     except Exception as e:
         print(f"[ERROR] Load model gemma failed. An error occurred: {e}")
+        
+
+if "parrot_mistral_lora_trainer_task" in ENABLED_TASKS:
+    try: 
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True, 
+            bnb_4bit_quant_type="nf4", 
+            bnb_4bit_compute_dtype=torch.bfloat16, 
+            bnb_4bit_use_double_quant=False, 
+        )
+        # hf_token = os.environ.get('HUGGINGFACE_API_KEY', "")
+        model_name = "mistralai/Mistral-7B-Instruct-v0.1"
+
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.padding_side = "right"
+        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.add_eos_token = True
+        tokenizer.add_bos_token, tokenizer.add_eos_token
+        model = AutoModelForCausalLM.from_pretrained(model_name,
+                                    load_in_4bit=True,
+                                    quantization_config = bnb_config,
+                                    torch_dtype = torch.bfloat16,
+                                    device_map = "auto",
+                                    trust_remote_code=True)
+        model.config.use_cache = False # silence the warnings
+        model.config.pretraining_tp = 1
+        model.gradient_checkpointing_enable()
+        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"] = {}
+        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["tokenizer"] =tokenizer
+        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"] = model
+        print(f"[INFO] Load model mistral success.")
+    except Exception as e:
+        print(f"[ERROR] Load model mistral failed. An error occurred: {e}")
 
 if "parrot_llm_gemma_7b_task" in ENABLED_TASKS:
     print(f"[INFO] Loading Gemma 7B ...")
@@ -127,6 +161,117 @@ if "parrot_mistral_embeddings_task" in ENABLED_TASKS:
     RESOURCE_CACHE["parrot_mistral_embeddings_task"] = (tokenizer, model)
 
 
+if "parrot_llm_mistral_7b_task" in ENABLED_TASKS:
+    print(f"[INFO] Loading Mistral 7B ...")
+    model_id = "mistralai/Mistral-7B-Instruct-v0.1"
+    tokenizer = AutoTokenizer.from_pretrained(model)
+    
+    model = AutoModelForCausalLM.from_pretrained(model_id).to(DEVICE)
+    
+    pipeline_chat = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        model_kwargs={"torch_dtype": torch.float16},
+        device="cuda",
+    )
+    
+    RESOURCE_CACHE["parrot_llm_mistral_7b_task"] = {}
+    RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["tokenizer"] = tokenizer
+    RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["pipeline"] = pipeline_chat
+
+
+def run_text_completion_mistral_7b(messages: list, configs: dict):
+    if messages[0]['role'] == 'system':
+        system_prompt = messages[0]['content']
+        messages = messages[1:]
+        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["tokenizer"].apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        prompt = f"{system_prompt}\n{prompt}"
+    else:
+        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["tokenizer"].apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+
+    outputs = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"](
+        prompt,
+        max_new_tokens=min(configs.get("max_new_tokens", 256), 4096),
+        do_sample=True,
+        temperature=max(configs.get("temperature", 0.7), 0.01),
+        top_k=configs.get("top_k", 50),
+        top_p=configs.get("top_p", 0.95),
+    )
+
+    return outputs[0]["generated_text"][len(prompt):]
+
+def run_mistral_trainer(data:list[str], num_train_epochs: int):
+    output_dir = "parrot_mistral_trainer"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        print(f"Created directory: {output_dir}")
+    else: 
+        print(f"Directory {output_dir} already exists")
+
+    try :
+        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"] = prepare_model_for_kbit_training(RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"])
+        peft_config = LoraConfig(
+            lora_alpha=16,
+            lora_dropout=0.1,
+            r=64,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj", "up_proj"]
+        )
+        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"] = get_peft_model(RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"], peft_config)
+        try :
+            dataset_dict = {"text" : data}
+            dataset = Dataset.from_dict(dataset_dict)    
+        except:
+            print('formatting error')
+                
+        training_arguments = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=config_dict['num_train_epochs'] if num_train_epochs is None else num_train_epochs,
+            per_device_train_batch_size=config_dict['per_device_train_batch_size'],
+            gradient_accumulation_steps=config_dict['gradient_accumulation_steps'],
+            optim=config_dict['optim'],
+            # save_steps=config_dict['save_steps'],
+            logging_steps=config_dict['logging_steps'],
+            learning_rate=config_dict['learning_rate'],
+            weight_decay=config_dict['weight_decay'],
+            fp16=config_dict['fp16'],
+            bf16=config_dict['bf16'],
+            max_grad_norm=config_dict['max_grad_norm'],
+            max_steps=config_dict['max_steps'],
+            warmup_ratio=config_dict['warmup_ratio'],
+            group_by_length=config_dict['group_by_length'],
+            lr_scheduler_type=config_dict['lr_scheduler_type'],
+            report_to="tensorboard",
+            save_strategy=config_dict['save_strategy'],
+        )
+        
+        
+        trainer = SFTTrainer(
+            model=RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"],
+            train_dataset=dataset,
+            peft_config=peft_config,
+            dataset_text_field="text",
+            max_seq_length=config_dict['max_seq_length'],
+            tokenizer=RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["tokenizer"],
+            args=training_arguments,
+            packing=config_dict['packing'],
+        )
+        trainer.train()
+        trainer.model.save_pretrained(output_dir)
+    except Exception as e:
+        print(f"[ERROR]: Error in Mistral trainer: {str(e)}")
+        
+    os.system(f"zip -r {output_dir}.zip {output_dir}")
+    shutil.rmtree(output_dir)
+    return f"{output_dir}.zip"
+
+
 def run_gemma_trainer(data:list[str], num_train_epochs: int):
     output_dir = "parrot_gemma_trainer"
     if not os.path.exists(output_dir):
@@ -156,7 +301,7 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
             per_device_train_batch_size=config_dict['per_device_train_batch_size'],
             gradient_accumulation_steps=config_dict['gradient_accumulation_steps'],
             optim=config_dict['optim'],
-            save_steps=config_dict['save_steps'],
+            # save_steps=config_dict['save_steps'],
             logging_steps=config_dict['logging_steps'],
             learning_rate=config_dict['learning_rate'],
             weight_decay=config_dict['weight_decay'],
@@ -168,6 +313,7 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
             group_by_length=config_dict['group_by_length'],
             lr_scheduler_type=config_dict['lr_scheduler_type'],
             report_to="tensorboard",
+            save_strategy=config_dict['save_strategy'],
         )
         
         
@@ -213,7 +359,8 @@ def run_mistral_embeddings(text: str, configs: dict):
         raise Exception(f"Error in Mistral embeddings model: {str(e)}")
 
 
-def run_text_completion_gemma_7b(messages: list, configs: dict):
+def run_text_completion_gemma_7b(messages: list, configs: dict, ):
+    
     if messages[0]['role'] == 'system':
         system_prompt = messages[0]['content']
         messages = messages[1:]
