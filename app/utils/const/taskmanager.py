@@ -12,7 +12,7 @@ from tasks import (
     parrot_mistral_embeddings_task,
     parrot_gemma_lora_trainer_task,
     parrot_img2vid_task,
-    parrot_llm_mistral_7b_instruction_task
+    parrot_llm_mistral_7b_task
 )
 
 TASK_MANAGEMENT = {
@@ -81,9 +81,9 @@ TASK_MANAGEMENT = {
         "task_name": "parrot_img2vid_task",
         "load_model_function": parrot_img2vid_task
     },
-    "parrot_llm_mistral_7b_instruction_task": {
-        "queue_name": "parrot_llm_mistral_7b_instruction_queue", 
-        "task_name": "parrot_llm_mistral_7b_instruction_task",
-        "load_model_function": parrot_llm_mistral_7b_instruction_task
+    "parrot_llm_mistral_7b_task": {
+        "queue_name": "parrot_llm_mistral_7b_queue", 
+        "task_name": "parrot_llm_mistral_7b_task",
+        "load_model_function": parrot_llm_mistral_7b_task
     },
 }

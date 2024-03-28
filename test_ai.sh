@@ -1,1 +1,1 @@
-ENABLED_TASKS=parrot_img2vid_task python3 test_ai.py
+ENABLED_TASKS=parrot_llm_mistral_7b_task python3 test_ai.py

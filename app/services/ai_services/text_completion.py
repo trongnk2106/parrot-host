@@ -185,24 +185,25 @@ def run_text_completion_mistral_7b(messages: list, configs: dict):
     if messages[0]['role'] == 'system':
         system_prompt = messages[0]['content']
         messages = messages[1:]
-        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["tokenizer"].apply_chat_template(
+        prompt = RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["tokenizer"].apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
         prompt = f"{system_prompt}\n{prompt}"
     else:
-        prompt = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["tokenizer"].apply_chat_template(
+        prompt = RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["tokenizer"].apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
 
-    outputs = RESOURCE_CACHE["parrot_llm_gemma-7b_task"]["pipeline"](
+    outputs = RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["pipeline"](
         prompt,
+        max_length=min(configs.get("max_new_tokens", 256), 4096),
         max_new_tokens=min(configs.get("max_new_tokens", 256), 4096),
         do_sample=True,
         temperature=max(configs.get("temperature", 0.7), 0.01),
         top_k=configs.get("top_k", 50),
         top_p=configs.get("top_p", 0.95),
     )
-
+    
     return outputs[0]["generated_text"][len(prompt):]
 
 def run_mistral_trainer(data:list[str], num_train_epochs: int):

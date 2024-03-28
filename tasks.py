@@ -308,7 +308,7 @@ def parrot_llm_gemma_7b_task(self, request_data):
             self.retry(exc=ex, countdown=int(os.environ['CELERY_RETRY_DELAY_TIME']))
             
             
-def parrot_llm_mistral_7b_instruction_task(self, request_data):
+def parrot_llm_mistral_7b_task(self, request_data):
     result = None
     try:
         result = worker_text_completion_mistral(
