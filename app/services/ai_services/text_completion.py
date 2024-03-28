@@ -46,26 +46,82 @@ elif (torch.has_mps or torch.backends.mps.is_available()) and ALLOW_MPS:
 
 print(f"[INFO] Using device: {DEVICE}")
 
-config_dict = {
-    "num_train_epochs": 1,
-    "per_device_train_batch_size": 1,
-    "per_device_eval_batch_size": 1,
-    "gradient_accumulation_steps": 1,
-    "optim": "paged_adamw_32bit",
-    "logging_steps": 100,
-    "learning_rate": 2e-4,
-    "weight_decay": 0.001,
-    "fp16": False,
-    "bf16": True,
-    "max_grad_norm": 0.3,
-    "max_steps": -1,
-    "warmup_ratio": 0.03,
-    "group_by_length": True,
-    "lr_scheduler_type": "constant",
-    "max_seq_length": 1024,
-    "packing": False,
-    "save_strategy": "no",
-}
+class LoRaTrainer():
+    def __init__(self, num_train_epochs: int = 1, config_dict: dict = None, output_dir : str = None):
+        self.output_dir = output_dir
+        self.num_train_epochs = num_train_epochs
+        self.config_dict = {
+            "num_train_epochs": 1,
+            "per_device_train_batch_size": 1,
+            "per_device_eval_batch_size": 1,
+            "gradient_accumulation_steps": 1,
+            "optim": "paged_adamw_32bit",
+            "logging_steps": 100,
+            "learning_rate": 2e-4,
+            "weight_decay": 0.001,
+            "fp16": False,
+            "bf16": True,
+            "max_grad_norm": 0.3,
+            "max_steps": -1,
+            "warmup_ratio": 0.03,
+            "group_by_length": True,
+            "lr_scheduler_type": "constant",
+            "max_seq_length": 1024,
+            "packing": False,
+            "save_strategy": "no",
+        }
+        
+        self.peft_config = LoraConfig(
+            lora_alpha=16,
+            lora_dropout=0.1,
+            r=64,
+            bias="none",
+            task_type="CAUSAL_LM",
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj", "up_proj"]
+        )
+    @property   
+    def training_arguments(self):
+        training_arguments = TrainingArguments(
+            output_dir=self.output_dir,
+            num_train_epochs=self.config_dict['num_train_epochs'] if self.num_train_epochs is None else self.num_train_epochs,
+            per_device_train_batch_size=self.config_dict['per_device_train_batch_size'],
+            gradient_accumulation_steps=self.config_dict['gradient_accumulation_steps'],
+            optim=self.config_dict['optim'],
+            save_steps=self.config_dict['save_steps'],
+            logging_steps=self.config_dict['logging_steps'],
+            learning_rate=self.config_dict['learning_rate'],
+            weight_decay=self.config_dict['weight_decay'],
+            fp16=self.config_dict['fp16'],
+            bf16=self.config_dict['bf16'],
+            max_grad_norm=self.config_dict['max_grad_norm'],
+            max_steps=self.config_dict['max_steps'],
+            warmup_ratio=self.config_dict['warmup_ratio'],
+            group_by_length=self.config_dict['group_by_length'],
+            lr_scheduler_type=self.config_dict['lr_scheduler_type'],
+            report_to="tensorboard",
+        )
+        return training_arguments
+        
+
+    def __call__(self, dataset: Dataset, model: AutoModelForCausalLM = None, tokenizer: AutoTokenizer = None):
+        trainer = SFTTrainer(
+            model=model,
+            train_dataset=dataset,
+            peft_config=self.peft_config,
+            dataset_text_field="text",
+            # formatting_func=format_prompts_fn,
+            max_seq_length=self.config_dict['max_seq_length'],
+            tokenizer=tokenizer,
+            args=self.training_arguments,
+            packing=self.config_dict['packing'],
+        )
+        trainer.train()
+        trainer.model.save_pretrained(self.output_dir)
+        
+        return {
+            "output_dir": self.output_dir,
+            "status" : "training completed"
+        }
 
 
 if "parrot_gemma_lora_trainer_task" in ENABLED_TASKS:
@@ -106,7 +162,6 @@ if "parrot_mistral_lora_trainer_task" in ENABLED_TASKS:
         )
         # hf_token = os.environ.get('HUGGINGFACE_API_KEY', "")
         model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-
         tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "right"
@@ -179,6 +234,7 @@ if "parrot_llm_mistral_7b_task" in ENABLED_TASKS:
     RESOURCE_CACHE["parrot_llm_mistral_7b_task"] = {}
     RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["tokenizer"] = tokenizer
     RESOURCE_CACHE["parrot_llm_mistral_7b_task"]["pipeline"] = pipeline_chat
+    
 
 
 def run_text_completion_mistral_7b(messages: list, configs: dict):
@@ -213,131 +269,44 @@ def run_mistral_trainer(data:list[str], num_train_epochs: int):
         print(f"Created directory: {output_dir}")
     else: 
         print(f"Directory {output_dir} already exists")
-
     try :
-        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"] = prepare_model_for_kbit_training(RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"])
-        peft_config = LoraConfig(
-            lora_alpha=16,
-            lora_dropout=0.1,
-            r=64,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj", "up_proj"]
-        )
-        RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"] = get_peft_model(RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"], peft_config)
         try :
             dataset_dict = {"text" : data}
             dataset = Dataset.from_dict(dataset_dict)    
         except:
             print('formatting error')
-                
-        training_arguments = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=config_dict['num_train_epochs'] if num_train_epochs is None else num_train_epochs,
-            per_device_train_batch_size=config_dict['per_device_train_batch_size'],
-            gradient_accumulation_steps=config_dict['gradient_accumulation_steps'],
-            optim=config_dict['optim'],
-            # save_steps=config_dict['save_steps'],
-            logging_steps=config_dict['logging_steps'],
-            learning_rate=config_dict['learning_rate'],
-            weight_decay=config_dict['weight_decay'],
-            fp16=config_dict['fp16'],
-            bf16=config_dict['bf16'],
-            max_grad_norm=config_dict['max_grad_norm'],
-            max_steps=config_dict['max_steps'],
-            warmup_ratio=config_dict['warmup_ratio'],
-            group_by_length=config_dict['group_by_length'],
-            lr_scheduler_type=config_dict['lr_scheduler_type'],
-            report_to="tensorboard",
-            save_strategy=config_dict['save_strategy'],
-        )
-        
-        
-        trainer = SFTTrainer(
-            model=RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"],
-            train_dataset=dataset,
-            peft_config=peft_config,
-            dataset_text_field="text",
-            max_seq_length=config_dict['max_seq_length'],
-            tokenizer=RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["tokenizer"],
-            args=training_arguments,
-            packing=config_dict['packing'],
-        )
-        trainer.train()
-        trainer.model.save_pretrained(output_dir)
+        model = RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"]
+        tokenizer = RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["tokenizer"]
+        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)(dataset=dataset, model=model, tokenizer=tokenizer)
+        logging.info(f"Training completed. Model saved at {llm_trainer['output_dir']}")
     except Exception as e:
         print(f"[ERROR]: Error in Mistral trainer: {str(e)}")
-        
     os.system(f"zip -r {output_dir}.zip {output_dir}")
     shutil.rmtree(output_dir)
     return f"{output_dir}.zip"
 
-
-def run_gemma_trainer(data:list[str], num_train_epochs: int, model_name : str):
-    output_dir = f"{model_name}"
+def run_gemma_trainer(data:list[str], num_train_epochs: int):
+    output_dir = "parrot_gemma_trainer"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Created directory: {output_dir}")
     else: 
         print(f"Directory {output_dir} already exists")
-
     try :
-        peft_config = LoraConfig(
-            lora_alpha=16,
-            lora_dropout=0.1,
-            r=64,
-            bias="none",
-            task_type="CAUSAL_LM",
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj","gate_proj", "up_proj"]
-        )
         try :
             dataset_dict = {"text" : data}
             dataset = Dataset.from_dict(dataset_dict)    
         except:
             print('formatting error')
-                
-        training_arguments = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=config_dict['num_train_epochs'] if num_train_epochs is None else num_train_epochs,
-            per_device_train_batch_size=config_dict['per_device_train_batch_size'],
-            gradient_accumulation_steps=config_dict['gradient_accumulation_steps'],
-            optim=config_dict['optim'],
-            # save_steps=config_dict['save_steps'],
-            logging_steps=config_dict['logging_steps'],
-            learning_rate=config_dict['learning_rate'],
-            weight_decay=config_dict['weight_decay'],
-            fp16=config_dict['fp16'],
-            bf16=config_dict['bf16'],
-            max_grad_norm=config_dict['max_grad_norm'],
-            max_steps=config_dict['max_steps'],
-            warmup_ratio=config_dict['warmup_ratio'],
-            group_by_length=config_dict['group_by_length'],
-            lr_scheduler_type=config_dict['lr_scheduler_type'],
-            report_to="tensorboard",
-            save_strategy=config_dict['save_strategy'],
-        )
-        
-        
-        trainer = SFTTrainer(
-            model=RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["model"],
-            train_dataset=dataset,
-            peft_config=peft_config,
-            dataset_text_field="text",
-            # formatting_func=format_prompts_fn,
-            max_seq_length=config_dict['max_seq_length'],
-            tokenizer=RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["tokenizer"],
-            args=training_arguments,
-            packing=config_dict['packing'],
-        )
-        trainer.train()
-        trainer.model.save_pretrained(output_dir)
+        model = RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["model"]
+        tokenizer = RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["tokenizer"]
+        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)(dataset=dataset, model=model, tokenizer=tokenizer)
+        logging.info(f"Training completed. Model saved at {llm_trainer['output_dir']}")
     except Exception as e:
         print(f"[ERROR]: Error in Gemma trainer: {str(e)}")
-        
     os.system(f"zip -r {output_dir}.zip {output_dir}")
     shutil.rmtree(output_dir)
     return f"{output_dir}.zip"
-
 
 def run_mistral_embeddings(text: str, configs: dict):
 

@@ -19,6 +19,7 @@ from app.src.v1.mistral_embeddings.mistral_embeddings import text_embedding as m
 from app.src.v1.gemma_trainer.gemma_trainer import gemma_trainer
 from app.src.v1.img2vid.img2vid import img2vid
 from app.src.v1.mistral_llm.text_completion import text_completion_mistral
+from app.src.v1.mistral_trainer.mistral_trainer import mistral_trainer
 
 def worker_img2vid(
     celery_task_id: str,
@@ -260,6 +261,28 @@ def worker_text_completion_mistral(
         request_data=request_data,
     )
     
+    return {
+        "is_success": is_success,
+        "response": response,
+        "error": error
+    }
+
+def worker_mistral_trainer(
+    celery_task_id: str,
+    celery_task_name: str,
+    request_data: GemmaTrainerRequest,
+):
+    show_log(
+    message="function: parrot_llm_gemma_lora_task, "
+            f"celery_task_id: {celery_task_id}, "
+            f"celery_task_name: {celery_task_name}"
+    )
+
+
+    is_success, response, error = mistral_trainer(
+    celery_task_id=celery_task_id,
+    request_data=request_data,)
+
     return {
         "is_success": is_success,
         "response": response,
