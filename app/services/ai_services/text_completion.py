@@ -164,7 +164,7 @@ if "parrot_mistral_embeddings_task" in ENABLED_TASKS:
 if "parrot_llm_mistral_7b_task" in ENABLED_TASKS:
     print(f"[INFO] Loading Mistral 7B ...")
     model_id = "mistralai/Mistral-7B-Instruct-v0.1"
-    tokenizer = AutoTokenizer.from_pretrained(model)
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
     
     model = AutoModelForCausalLM.from_pretrained(model_id).to(DEVICE)
     
@@ -203,7 +203,7 @@ def run_text_completion_mistral_7b(messages: list, configs: dict):
         top_k=configs.get("top_k", 50),
         top_p=configs.get("top_p", 0.95),
     )
-    
+
     return outputs[0]["generated_text"][len(prompt):]
 
 def run_mistral_trainer(data:list[str], num_train_epochs: int):
@@ -273,8 +273,8 @@ def run_mistral_trainer(data:list[str], num_train_epochs: int):
     return f"{output_dir}.zip"
 
 
-def run_gemma_trainer(data:list[str], num_train_epochs: int):
-    output_dir = "parrot_gemma_trainer"
+def run_gemma_trainer(data:list[str], num_train_epochs: int, model_name : str):
+    output_dir = f"{model_name}"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Created directory: {output_dir}")
