@@ -14,7 +14,7 @@ class DoneI2VRequest(BaseModel):
 
 class GemmaTrainerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
-    data : list[str] = Field(..., description="data")
+    minio_input_paths : list[str] = Field(..., description="data")
     num_train_epochs: int = Field(..., description="num_train_epochs")
 
 

@@ -25,7 +25,8 @@ from datasets import load_dataset, Dataset
 from app.utils.base import remove_documents
 import os
 from dotenv import load_dotenv
-
+import urllib.request
+import json
 load_dotenv()
 
 
@@ -108,7 +109,7 @@ class LoRaTrainer():
             model=model,
             train_dataset=dataset,
             peft_config=self.peft_config,
-            dataset_text_field="text",
+            dataset_text_field="data",
             # formatting_func=format_prompts_fn,
             max_seq_length=self.config_dict['max_seq_length'],
             tokenizer=tokenizer,
@@ -285,7 +286,7 @@ def run_mistral_trainer(data:list[str], num_train_epochs: int):
     shutil.rmtree(output_dir)
     return f"{output_dir}.zip"
 
-def run_gemma_trainer(data:list[str], num_train_epochs: int):
+def run_gemma_trainer(minio_input_paths:list[str], num_train_epochs: int):
     output_dir = "parrot_gemma_trainer"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -294,8 +295,14 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
         print(f"Directory {output_dir} already exists")
     try :
         try :
+            temp_path = "./data.json"
+            urllib.request.urlretrieve(minio_input_paths[0], temp_path)
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            data = data["data"]
             dataset_dict = {"text" : data}
             dataset = Dataset.from_dict(dataset_dict)    
+            
         except:
             print('formatting error')
         model = RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["model"]
@@ -305,7 +312,8 @@ def run_gemma_trainer(data:list[str], num_train_epochs: int):
     except Exception as e:
         print(f"[ERROR]: Error in Gemma trainer: {str(e)}")
     os.system(f"zip -r {output_dir}.zip {output_dir}")
-    shutil.rmtree(output_dir)
+    # shutil.rmtree(output_dir)
+    shutil.rmtree(temp_path)
     return f"{output_dir}.zip"
 
 def run_mistral_embeddings(text: str, configs: dict):

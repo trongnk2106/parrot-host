@@ -38,6 +38,7 @@ def send_done_lora_trainner_task(request_data: DoneLoraTrainnerRequest):
 
 def update_status_for_task(request_data: UpdateStatusTaskRequest):
     try:
+        print(request_data)
         response = requests.post(
             headers={
                 "Authorization": f"Bearer {JWT_TOKEN}",
