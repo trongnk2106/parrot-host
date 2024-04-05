@@ -20,7 +20,7 @@ class GemmaTrainerRequest(BaseModel):
 
 class DoneGemmaTrainerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
-    url_download: Any = Field(..., description="url_download")
+    url_download: str = Field(..., description="url_download")
 
 
 class LoraTrainnerRequest(BaseModel):
@@ -31,7 +31,7 @@ class LoraTrainnerRequest(BaseModel):
 
 class DoneLoraTrainnerRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
-    url_download: Any = Field(..., description="url_download")
+    url_download: str = Field(..., description="url_download")
 
 
 class UpdateStatusTaskRequest(BaseModel):
@@ -50,7 +50,7 @@ class SendFailTaskRequest(BaseModel):
 class SendDoneTaskRequest(BaseModel):
     task_id: str = Field(..., description="task_id")
     task_type: str = Field(..., description="task_type")
-    sub_task_id: Union[str, None] = Field(None, description="sub_task_id")
+    # sub_task_id: Union[str, None] = Field(None, description="sub_task_id")
 
 
 class SendProgressTaskRequest(BaseModel):

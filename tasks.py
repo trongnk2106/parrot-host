@@ -4,7 +4,7 @@ from pathlib import Path
 from celery import Celery
 from celery.states import FAILURE, SUCCESS
 
-from app.src.v1.backend.api import send_done_task, send_fail_task
+from app.src.v1.backend.api import send_done_task, send_fail_task, send_done_task_gemma
 from app.src.v1.schemas.base import (SendDoneTaskRequest, SendFailTaskRequest)
 from app.src.v1.workers import worker_lora_trainner, worker_sd, worker_sdxl, worker_sdxl_lightning, \
     worker_txt2vid, worker_text_completion, worker_t2s, worker_musicgen, worker_audiogen, worker_gte, \
@@ -70,7 +70,7 @@ def parrot_gemma_lora_trainer_task(self, request_data):
         if not result.get('is_success'):
             raise Exception("result is None")
         self.update_state(state=SUCCESS, meta={'result': result})
-        is_success, _, _ = send_done_task(
+        is_success, _, _ = send_done_task_gemma(
             SendDoneTaskRequest(
                 task_id=request_data['task_id'],
                 task_type="GEMMA_TRAINNER",

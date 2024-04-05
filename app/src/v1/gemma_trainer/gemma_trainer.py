@@ -1,7 +1,7 @@
 import time
 import io
 from app.base.exception.exception import show_log
-from app.src.v1.backend.api import update_status_for_task, send_done_gemma_trainer_task
+from app.src.v1.backend.api import update_status_for_task, send_done_gemma_trainer_task, update_status_for_gemma
 from app.services.ai_services.text_completion import run_gemma_trainer
 from app.src.v1.schemas.base import GemmaTrainerRequest, DoneGemmaTrainerRequest, UpdateStatusTaskRequest
 from app.utils.services import minio_client
@@ -18,34 +18,33 @@ def gemma_trainer(
     try :
         t0 = time.time()
         output_dir = run_gemma_trainer(
-            data = request_data.minio_input_paths,
-            num_train_epochs=request_data.num_train_epochs,   
+            minio_input_paths = request_data['minio_input_paths'],
+            num_train_epochs=request_data['num_train_epochs'],   
         )
         
         with open(output_dir, 'rb') as f:
             obj_checkpoint = f.read()
             
-        s3_key = f"gemma_trainer/{request_data.task_id}.zip"
-        minio_client.minio_upload_file(
-            content=io.BytesIO(obj_checkpoint),
-            s3_key=s3_key
-        )
+        s3_key = f"gemma_trainer/{request_data['task_id']}.zip"
+        # TODO : Upload weight to s3 
+        # minio_client.minio_upload_file(
+        #     content=io.BytesIO(obj_checkpoint),
+        #     s3_key=s3_key
+        # )
         
         url_download = f"http://103.186.100.242:9000/parrot-prod/{s3_key}"
         
         t1 = time.time()
         show_log(f"Time processed: {t1-t0}")
 
-        print("Done AI part")
         # update task status
-        is_success, response, error = update_status_for_task(
+        is_success, response, error = update_status_for_gemma(
             UpdateStatusTaskRequest(
-                task_id=request_data.task_id,
+                task_id=request_data['task_id'],
                 status="COMPLETED",
                 result=url_download
             )
         )
-
         if not response:
             show_log(
                 message="function: gemma_fineturning, "
@@ -54,9 +53,9 @@ def gemma_trainer(
             )
             return response
         
-        send_done_gemma_trainer_task(
+        is_success, response, error = send_done_gemma_trainer_task(
             DoneGemmaTrainerRequest(
-                task_id=request_data.task_id,
+                task_id=request_data['task_id'],
                 url_download=url_download
             )
         )

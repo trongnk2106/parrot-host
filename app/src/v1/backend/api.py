@@ -38,8 +38,7 @@ def send_done_lora_trainner_task(request_data: DoneLoraTrainnerRequest):
 
 def update_status_for_task(request_data: UpdateStatusTaskRequest):
     try:
-        print(request_data)
-        response = requests.post(
+        response =  requests.post(
             headers={
                 "Authorization": f"Bearer {JWT_TOKEN}",
                 "Content-Type": "application/json"
@@ -53,6 +52,24 @@ def update_status_for_task(request_data: UpdateStatusTaskRequest):
     except Exception as e:
         show_log(message=e, level="error")
         return False, None, e
+
+def update_status_for_gemma(request_data: UpdateStatusTaskRequest):
+    try:
+        response =  requests.post(
+            headers={
+                "Authorization": f"Bearer {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/v1/gemma-trainner/update_status_for_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
+
 
 
 def send_fail_task(request_data: SendFailTaskRequest):
@@ -72,7 +89,22 @@ def send_fail_task(request_data: SendFailTaskRequest):
         show_log(message=e, level="error")
         return False, None, e
 
-
+def send_fail_task_gemma(request_data: SendFailTaskRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bearer {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/v1/gemma-trainner/fail_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
 def send_done_task(request_data: SendDoneTaskRequest):
     try:
         response = requests.post(
@@ -89,6 +121,24 @@ def send_done_task(request_data: SendDoneTaskRequest):
     except Exception as e:
         show_log(message=e, level="error")
         return False, None, e
+
+def send_done_task_gemma(request_data: SendDoneTaskRequest):
+    try:
+        response = requests.post(
+            headers={
+                "Authorization": f"Bearer {JWT_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/v1/gemma-trainner/done_task",
+            json=request_data.dict()
+        )
+        if response.status_code == 200:
+            return True, response.json(), None
+        return False, None, response.json()
+    except Exception as e:
+        show_log(message=e, level="error")
+        return False, None, e
+
 
 
 def send_progress_task(request_data: SendProgressTaskRequest):
@@ -137,7 +187,6 @@ def send_done_sdxl_lightning_task(request_data: DoneSDXLRequest):
             url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_sdxl_lightning_task",
             json=request_data.dict()
         )
-        print(response.status_code, response.json())
         if response.status_code == 200:
             return True, response.json(), None
         return False, None, response.json()
@@ -207,12 +256,12 @@ def send_done_gemma_trainer_task(request_data: DoneGemmaTrainerRequest):
                 "Authorization": f"Bearer {JWT_TOKEN}",
                 "Content-Type": "application/json"
             },
-            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/done_gemma_trainer_task",
+            url=f"{os.getenv('HOST_BACKEND_SERVICE')}/v1/gemma-trainner/done_gemma_trainer_task",
             json=request_data.dict()
         )
         if response.status_code == 200:
             return True, response.json(), None  
-        return False, None, response.json()
+        return False, True, response.json()
     except Exception as e:
         show_log(message=e, level="error")
         return False, None, e

@@ -88,7 +88,7 @@ class LoRaTrainer():
             per_device_train_batch_size=self.config_dict['per_device_train_batch_size'],
             gradient_accumulation_steps=self.config_dict['gradient_accumulation_steps'],
             optim=self.config_dict['optim'],
-            save_steps=self.config_dict['save_steps'],
+            # save_steps=self.config_dict['save_steps'],
             logging_steps=self.config_dict['logging_steps'],
             learning_rate=self.config_dict['learning_rate'],
             weight_decay=self.config_dict['weight_decay'],
@@ -104,12 +104,12 @@ class LoRaTrainer():
         return training_arguments
         
 
-    def __call__(self, dataset: Dataset, model: AutoModelForCausalLM = None, tokenizer: AutoTokenizer = None):
+    def train_model(self, dataset: Dataset, model: AutoModelForCausalLM = None, tokenizer: AutoTokenizer = None):
         trainer = SFTTrainer(
             model=model,
             train_dataset=dataset,
             peft_config=self.peft_config,
-            dataset_text_field="data",
+            dataset_text_field="text",
             # formatting_func=format_prompts_fn,
             max_seq_length=self.config_dict['max_seq_length'],
             tokenizer=tokenizer,
@@ -134,7 +134,7 @@ if "parrot_gemma_lora_trainer_task" in ENABLED_TASKS:
             bnb_4bit_use_double_quant=False, 
         )
         from huggingface_hub import login
-        login()
+        login('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')
         # hf_token = os.environ.get('HUGGINGFACE_API_KEY', "")
         model_name = "google/gemma-7b-it"
 
@@ -278,8 +278,9 @@ def run_mistral_trainer(data:list[str], num_train_epochs: int):
             print('formatting error')
         model = RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["model"]
         tokenizer = RESOURCE_CACHE["parrot_mistral_lora_trainer_task"]["tokenizer"]
-        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)(dataset=dataset, model=model, tokenizer=tokenizer)
-        logging.info(f"Training completed. Model saved at {llm_trainer['output_dir']}")
+        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)
+        result = llm_trainer.train_model(dataset=dataset, model=model, tokenizer=tokenizer)
+        logging.info(f"Training completed. Model saved at {result['output_dir']}")
     except Exception as e:
         print(f"[ERROR]: Error in Mistral trainer: {str(e)}")
     os.system(f"zip -r {output_dir}.zip {output_dir}")
@@ -295,10 +296,13 @@ def run_gemma_trainer(minio_input_paths:list[str], num_train_epochs: int):
         print(f"Directory {output_dir} already exists")
     try :
         try :
+            
             temp_path = "./data.json"
+            print(minio_input_paths[0])
             urllib.request.urlretrieve(minio_input_paths[0], temp_path)
             with open(temp_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                print(data)
             data = data["data"]
             dataset_dict = {"text" : data}
             dataset = Dataset.from_dict(dataset_dict)    
@@ -307,8 +311,9 @@ def run_gemma_trainer(minio_input_paths:list[str], num_train_epochs: int):
             print('formatting error')
         model = RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["model"]
         tokenizer = RESOURCE_CACHE["parrot_gemma_lora_trainer_task"]["tokenizer"]
-        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)(dataset=dataset, model=model, tokenizer=tokenizer)
-        logging.info(f"Training completed. Model saved at {llm_trainer['output_dir']}")
+        llm_trainer = LoRaTrainer(num_train_epochs=num_train_epochs, output_dir=output_dir)
+        result = llm_trainer.train_model(dataset=dataset, model=model, tokenizer=tokenizer)
+        logging.info(f"Training completed. Model saved at {result['output_dir']}")
     except Exception as e:
         print(f"[ERROR]: Error in Gemma trainer: {str(e)}")
     os.system(f"zip -r {output_dir}.zip {output_dir}")
